@@ -68,7 +68,7 @@ The time varies based on your system, but in my tests - 1080p media takes less t
 ### Movies
 <img src="./previews/movies.gif">
 
-### Series
+### Series/Anime
 <img src="./previews/series.gif">
 
 
