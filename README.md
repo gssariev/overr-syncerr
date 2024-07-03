@@ -57,7 +57,18 @@ In your Overseerr instance go to:
 3. Mention the langauge of the subtitles (using the specific pre-mapped keywords), if the media is 4K and if the subtitles are HI or not.
 4. Wait for the subtitles to be synced
 
+**ALWAYS SPECIFY THE SEASON AND EPISODE FOR SERIES**
+
 The time varies based on your system, but in my tests - 1080p media takes less than 5 min while 4K could take less than 10 min.
+
+## Preview
+
+### Movies
+<img src="./previews/movies.gif">
+
+### Series
+<img src="./previews/series.gif">
+
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
