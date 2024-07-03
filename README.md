@@ -6,7 +6,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 - **Full Sonarr and Radarr Integration**: Easily fetch series and movie details from Sonarr and Radarr.
 - **Bazarr Integration**: Retrieve and synchronize subtitles from Bazarr, including support for 4K media and HI subtitles.
-- **Language Mapping**: Map keywords to langauge names based on webhook messages.
+- **Language Mapping**: Map keywords to language names based on webhook messages.
 - **Audio Sync**: Uses the first audio track to sync subtitles to.
 
 ## Future plans
