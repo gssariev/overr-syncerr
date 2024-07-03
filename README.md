@@ -38,14 +38,14 @@ These instructions will help you set up and run Overr-Syncerr on your local mach
    ```sh
    docker-compose up --build
 
-The container listens for webhooks on the port you've specified. Ensure Overseerr is configured to send webhook requests to the following endpoint: **http://your-docker-host:your-port/**
+The container listens for webhooks on the port you've specified. Ensure Overseerr is configured to send webhook requests to the following endpoint: **http://your-ip-address:your-port/**
 
 ### Overseerr Webhook
 
 In your Overseerr instance go to:
 
 1. Settings -> Notificaitons -> Webhook
-2. Enable the webhook agent and paste the endpoint **http://your-docker-host:your-port/** into the Webhook URL field
+2. Enable the webhook agent and paste the endpoint **http://your-ip-address:your-port/** into the Webhook URL field
 3. Make sure 'Issue Reported' is ticked
 4. Test to see if the webhook notificaiton is sent
 5. Save Changes
