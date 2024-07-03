@@ -71,7 +71,7 @@ The time varies based on your system, but in my tests - 1080p media takes less t
 ### Series/Anime
 <img src="./previews/series.gif">
 
-### Sript Log
+### Script Log
 <img src="./previews/script_log.png">
 
 
