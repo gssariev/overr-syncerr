@@ -71,6 +71,9 @@ The time varies based on your system, but in my tests - 1080p media takes less t
 ### Series/Anime
 <img src="./previews/series.gif">
 
+### Sript Log
+<img src="./previews/script_log.png">
+
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
