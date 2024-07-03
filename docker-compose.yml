@@ -1,0 +1,38 @@
+services:
+  overr-syncerr:
+    image: gsariev/overr-syncerr:latest
+    container_name: overr-syncerr
+    ports:
+      - "8089:8089"
+    environment:
+    
+      BAZARR_API_KEY: "YOUR_BAZARR_API_KEY"
+      BAZARR_URL: "http://BAZARR_IP:BAZARR_PORT/api"
+      
+      RADARR_API_KEY: "YOUR_RADARR_API_KEY"
+      RADARR_URL: "http://RADARR_IP:RADARR_PORT/api/v3"
+      
+      SONARR_API_KEY: "YOUR_SONARR_API_KEY"
+      SONARR_URL: "http://SONARR_IP:SONARR_PORT/api/v3"
+      
+      BAZARR_4K_API_KEY: "YOUR_BAZARR_4K_API_KEY"
+      BAZARR_4K_URL: "http://BAZARR_4K_IP:BAZARR_4K_PORT/api"
+      
+      RADARR_4K_API_KEY: "YOUR_RADARR_4K_API_KEY"
+      RADARR_4K_URL: "http://RADARR_4K_IP:RADARR_4K_PORT/api/v3"
+      
+      SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
+      SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
+      
+      PORT: 8089
+      
+      #Map specific keywords to your subtitle languages. Examples below:
+      LANGUAGE_MAP: '{"da":"Danish",
+      "en":"English",
+      "bg":"Bulgarian",
+      "dansk":"Danish",
+      "english":"English",
+      "danske":"Danish",
+      "eng":"English"}'
+      
+      restart: unless-stopped
