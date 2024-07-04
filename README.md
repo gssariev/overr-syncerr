@@ -16,6 +16,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 ## Future plans
 
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
+- **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
 
 ## Known issues (WIP)
 
