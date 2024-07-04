@@ -193,7 +193,7 @@ function Handle-Webhook {
                 Write-Host "Mapped Language Name: $languageName"
 
                 $newSubtitlePath = Get-BazarrMovieSubtitlePath -radarrId $radarrId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                Write-Host "New Subtitle Path: $newSubtitlePath"
+                Write-Host "Subtitle Path: $newSubtitlePath"
 
                 if ($newSubtitlePath) {
                     $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
@@ -205,7 +205,7 @@ function Handle-Webhook {
 
                     try {
                         $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                        Write-Host "Bazarr response: $bazarrResponse"
+                        Write-Host "Bazarr response: Synced"
                     } catch {
                         Write-Host "Failed to send PATCH request to Bazarr: $_"
                     }
@@ -237,7 +237,7 @@ function Handle-Webhook {
                     Write-Host "Mapped Language Name: $languageName"
 
                     $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                    Write-Host "New Subtitle Path: $newSubtitlePath"
+                    Write-Host "Subtitle Path: $newSubtitlePath"
 
                     if ($newSubtitlePath) {
                         $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
@@ -249,7 +249,7 @@ function Handle-Webhook {
 
                         try {
                             $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                            Write-Host "Bazarr response: $bazarrResponse"
+                            Write-Host "Bazarr response: Synced"
                         } catch {
                             Write-Host "Failed to send PATCH request to Bazarr: $_"
                         }
