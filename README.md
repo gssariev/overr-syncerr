@@ -11,7 +11,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Future plans
 
-- **Auto-reply and resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
+- **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
 
 ## Getting Started
 
@@ -61,7 +61,7 @@ As long as the issue message contains keywords that have been mapped to match th
 
 **ALWAYS SPECIFY THE SEASON AND EPISODE FOR SERIES**
 
-The time varies based on your system, but in my tests - 1080p media takes less than 5 min while 4K could take less than 10 min.
+The time varies based on your system, but in my tests 1080p media takes less than 5 min while 4K could take less than 10 min to sync subtitles to (due to the larger size).
 
 ## Preview
 
