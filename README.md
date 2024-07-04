@@ -2,6 +2,10 @@
 
 Overr-Syncerr is a script designed to automate the management of subtitle synchronization issues across your media library. By leveraging **[Overseerr](https://overseerr.dev)**'s built-in webhook and issue reporting functionality, this script allows users to specify the subtitles they need synchronized. It seamlessly integrates with your existing services such as **[Sonarr](https://sonarr.tv/)**, **[Radarr](https://radarr.video/)**, and **[Bazarr](https://www.bazarr.media)**, making the entire process of subtitle synchronization more automated.
 
+<a href="https://hub.docker.com/r/gsariev/overr-syncerr"><img src="https://img.shields.io/docker/pulls/gsariev/overr-syncerr" alt="Docker pulls"></a>
+<a href="https://github.com/gssariev/overr-syncerr/blob/main/LICENSE"><img alt="GitHub" src="https://img.shields.io/github/license/gssariev/overr-syncerr">
+
+
 ## Current Features
 
 - **Full Sonarr and Radarr Integration**: Easily fetch series and movie details from Sonarr and Radarr.
@@ -12,6 +16,10 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 ## Future plans
 
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
+
+## Known issues (WIP)
+
+- **Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.
 
 ## Getting Started
 
@@ -73,6 +81,10 @@ The time varies based on your system, but in my tests 1080p media takes less tha
 
 ### Script Log
 <img src="./previews/script_log.png">
+
+## Found a bug?
+
+If you found an issue or have ideas for improving this project, please submit an issue using the issue tab above.
 
 
 ## License
