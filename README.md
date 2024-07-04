@@ -19,7 +19,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Known issues (WIP)
 
-- **Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.
+- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~ - Fixed in v1.0.1
 
 ## Getting Started
 
