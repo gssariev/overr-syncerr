@@ -17,12 +17,12 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Future plans
 
-- **Improve the handling of multiple Payloads**
+- **Improve the handling of multiple Payloads** - implemented ✅
 
 ## Known issues (WIP)
 
-- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~ :
-- **Handling Multiple Payloads** - in a case where multiple payloads are sent while one is already being processed, the rest could fail. Looking into a way to resolve this ⚠️
+- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~
+- ~~**Handling Multiple Payloads** - in a case where multiple payloads are sent while one is already being processed, the rest could fail. Looking into a way to resolve this~~
 
 ## Getting Started
 
@@ -65,10 +65,9 @@ In your Overseerr instance go to:
 
 1. In Overserr, navigate to the media that has unsynced subtitles
 2. Report a subtitle issue
-3. Mention the langauge of the subtitles (using the specific pre-mapped keywords), if the media is 4K and if the subtitles are HI or not.
-4. Wait for the subtitles to be synced
-
-As long as the issue message contains keywords that have been mapped to match the desired language, the contents of the message can be anything (see preview examples).
+3. Mention the langauge of the subtitles (using the specific pre-mapped keywords), if the media is 4K and if the subtitles are HI or not, and if the media needs to be synced (using the specific pre-mapped sync keywords)
+4. Bazarr will start syncing the subtitles to the first audio track
+5. Upon completion, Overseerr will reply to the created subtitle issue and mark it as resolved
 
 ## Preview
 
