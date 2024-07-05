@@ -17,6 +17,7 @@ $port = $env:PORT
 
 # Read the language map from the environment variable and convert it from JSON
 $languageMapJson = $env:LANGUAGE_MAP
+$syncKeywordsJson = $env:SYNC_KEYWORDS
 
 try {
     $languageMapPSObject = ConvertFrom-Json -InputObject $languageMapJson
@@ -28,7 +29,14 @@ try {
     $languageMap = @{}
 }
 
-# Function to map language codes to names
+# Read the sync keywords list with fallback
+try {
+    $syncKeywords = ConvertFrom-Json -InputObject $syncKeywordsJson
+} catch {
+    $syncKeywords = @('sync', 'out of sync', 'synchronize', 'synchronization')
+}
+
+# Define a function to map language codes to names
 function Map-LanguageCode {
     param (
         [string]$issueMessage,
@@ -42,6 +50,22 @@ function Map-LanguageCode {
         }
     }
     return 'English'  # Default language
+}
+
+# Function to check if the message contains synchronization-related keywords
+function Contains-SyncKeyword {
+    param (
+        [string]$issueMessage,
+        [array]$syncKeywords
+    )
+
+    $lowercaseMessage = $issueMessage.ToLower()
+    foreach ($keyword in $syncKeywords) {
+        if ($lowercaseMessage.Contains($keyword)) {
+            return $true
+        }
+    }
+    return $false
 }
 
 # Function to get seriesId from Sonarr using tvdbId
@@ -219,7 +243,35 @@ function Resolve-OverseerrIssue {
     }
 }
 
-# Function to handle the webhook
+# Create a Queue
+$queue = [System.Collections.Queue]::new()
+
+# Function to enqueue payloads
+function Enqueue-Payload {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Payload
+    )
+    $queue.Enqueue($Payload)
+    Write-Output "Payload enqueued."
+}
+
+# Function to process payloads
+function Process-Queue {
+    while ($queue.Count -gt 0) {
+        $jsonPayload = $queue.Dequeue()
+        Write-Output "Processing payload: $jsonPayload"
+
+        # Handle the webhook
+        Handle-Webhook -jsonPayload $jsonPayload
+
+        # Wait for 5 seconds before processing the next payload
+        Start-Sleep -Seconds 5
+    }
+    Write-Output "All payloads processed."
+}
+
+# Define the function to handle the webhook
 function Handle-Webhook {
     param (
         [string]$jsonPayload
@@ -235,6 +287,13 @@ function Handle-Webhook {
 
         # Check if the issue message contains 'HI' for hearing impaired
         $isHI = $payload.message -match "(?i)hi"
+
+        # Check if the issue message contains sync keywords
+        $containsSyncKeyword = Contains-SyncKeyword -issueMessage $payload.message -syncKeywords $syncKeywords
+        if (-not $containsSyncKeyword) {
+            Write-Host "Issue message does not contain sync keywords, skipping."
+            return
+        }
 
         # Use the appropriate API keys and URLs based on whether the media is 4K
         if ($is4K) {
@@ -428,8 +487,11 @@ while ($true) {
 
         Write-Host "Received payload: $jsonPayload"
 
-        # Handle the webhook
-        Handle-Webhook -jsonPayload $jsonPayload
+        # Enqueue the payload
+        Enqueue-Payload -Payload $jsonPayload
+
+        # Process the queue
+        Process-Queue
 
         # Send a response
         $response.StatusCode = 200
