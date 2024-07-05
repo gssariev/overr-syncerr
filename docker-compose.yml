@@ -23,6 +23,9 @@ services:
       
       SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
       SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
+
+      OVERSEERR_API_KEY: "YOUR_OVERSEERR_API"
+      OVERSEERR_URL: "http://YOUR_OVERSEERR_URL:OVERSEERR_PORT/api/v1"
       
       PORT: 8089
       
