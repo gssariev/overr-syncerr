@@ -11,6 +11,8 @@ $radarr4kApiKey = $env:RADARR_4K_API_KEY
 $radarr4kUrl = $env:RADARR_4K_URL
 $sonarr4kApiKey = $env:SONARR_4K_API_KEY
 $sonarr4kUrl = $env:SONARR_4K_URL
+$overseerrApiKey = $env:OVERSEERR_API_KEY
+$overseerrUrl = $env:OVERSEERR_URL
 $port = $env:PORT
 
 # Read the language map from the environment variable and convert it from JSON
@@ -26,7 +28,7 @@ try {
     $languageMap = @{}
 }
 
-# Define a function to map language codes to names
+# Function to map language codes to names
 function Map-LanguageCode {
     param (
         [string]$issueMessage,
@@ -132,6 +134,39 @@ function Get-BazarrEpisodeSubtitlePath {
     }
 }
 
+# Function to get all episodes from Sonarr using seriesId and seasonNumber
+function Get-SonarrEpisodesBySeason {
+    param (
+        [string]$seriesId,
+        [int]$seasonNumber,
+        [string]$sonarrApiKey,
+        [string]$sonarrUrl
+    )
+    $url = "$sonarrUrl/episode?seriesId=$seriesId&seasonNumber=$seasonNumber&includeImages=false&apikey=$sonarrApiKey"
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get
+        return $response
+    } catch {
+        return $null
+    }
+}
+
+# Function to get movie details from Radarr using tmdbId
+function Get-RadarrMovieDetails {
+    param (
+        [string]$tmdbId,
+        [string]$radarrApiKey,
+        [string]$radarrUrl
+    )
+    $url = "$radarrUrl/movie?tmdbId=$tmdbId&apikey=$radarrApiKey"
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Get
+        return $response
+    } catch {
+        return $null
+    }
+}
+
 # Function to extract language code from subtitle path
 function Extract-LanguageCodeFromPath {
     param (
@@ -146,7 +181,45 @@ function Extract-LanguageCodeFromPath {
     }
 }
 
-# Define the function to handle the webhook
+# Function to post a comment to Overseerr issue
+function Post-OverseerrComment {
+    param (
+        [string]$issueId,
+        [string]$message,
+        [string]$overseerrApiKey,
+        [string]$overseerrUrl
+    )
+    $url = "$overseerrUrl/issue/$issueId/comment"
+    $body = @{
+        message = $message
+    } | ConvertTo-Json
+
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Post -Body $body -ContentType "application/json" -Headers @{ 'X-Api-Key' = $overseerrApiKey }
+        Write-Host "Posted comment to Overseerr issue $issueId"
+    } catch {
+        Write-Host "Failed to post comment to Overseerr: $_"
+    }
+}
+
+# Function to mark Overseerr issue as resolved
+function Resolve-OverseerrIssue {
+    param (
+        [string]$issueId,
+        [string]$overseerrApiKey,
+        [string]$overseerrUrl
+    )
+    $url = "$overseerrUrl/issue/$issueId/resolved"
+    
+    try {
+        $response = Invoke-RestMethod -Uri $url -Method Post -Headers @{ 'X-Api-Key' = $overseerrApiKey }
+        Write-Host "Marked issue $issueId as resolved in Overseerr"
+    } catch {
+        Write-Host "Failed to mark issue as resolved in Overseerr: $_"
+    }
+}
+
+# Function to handle the webhook
 function Handle-Webhook {
     param (
         [string]$jsonPayload
@@ -171,6 +244,13 @@ function Handle-Webhook {
             $radarrUrl = $radarr4kUrl
             $sonarrApiKey = $sonarr4kApiKey
             $sonarrUrl = $sonarr4kUrl
+        } else {
+            $bazarrApiKey = $env:BAZARR_API_KEY
+            $bazarrUrl = $env:BAZARR_URL
+            $radarrApiKey = $env:RADARR_API_KEY
+            $radarrUrl = $env:RADARR_URL
+            $sonarrApiKey = $env:SONARR_API_KEY
+            $sonarrUrl = $env:SONARR_URL
         }
 
         if ($payload.media.media_type -eq "movie") {
@@ -178,7 +258,7 @@ function Handle-Webhook {
             Write-Host "Fetching movie details from Radarr for tmdbId: $tmdbId"
 
             try {
-                $radarrMovieDetails = Invoke-RestMethod -Uri "$radarrUrl/movie?tmdbId=$tmdbId&apikey=$radarrApiKey" -Method Get
+                $radarrMovieDetails = Get-RadarrMovieDetails -tmdbId $tmdbId -radarrApiKey $radarrApiKey -radarrUrl $radarrUrl
             } catch {
                 Write-Host "Failed to get movie details from Radarr: $_"
                 return
@@ -206,6 +286,12 @@ function Handle-Webhook {
                     try {
                         $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
                         Write-Host "Bazarr response: Synced"
+
+                        # Post a comment to Overseerr
+                        Post-OverseerrComment -issueId $payload.issue.issue_id -message "Subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+
+                        # Resolve the issue in Overseerr
+                        Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     } catch {
                         Write-Host "Failed to send PATCH request to Bazarr: $_"
                     }
@@ -224,40 +310,94 @@ function Handle-Webhook {
             $seriesId = Get-SonarrSeriesId -tvdbId $tvdbId -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
             if ($seriesId) {
                 Write-Host "Series ID: $seriesId"
-                Write-Host "Fetching episode details from Sonarr for seriesId: $seriesId, season: $affectedSeason, episode: $affectedEpisode"
 
-                $episodeDetails = Get-SonarrEpisodeDetails -seriesId $seriesId -seasonNumber ([int]$affectedSeason) -episodeNumber ([int]$affectedEpisode) -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
+                if ($affectedEpisode) {
+                    Write-Host "Fetching episode details from Sonarr for seriesId: $seriesId, season: $affectedSeason, episode: $affectedEpisode"
+                    $episodeDetails = Get-SonarrEpisodeDetails -seriesId $seriesId -seasonNumber ([int]$affectedSeason) -episodeNumber ([int]$affectedEpisode) -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
+                    if ($episodeDetails) {
+                        $episodeId = $episodeDetails.id
+                        $episodeFileId = $episodeDetails.episodeFileId
+                        Write-Host "Episode ID: $episodeId, Episode File ID: $episodeFileId"
 
-                if ($episodeDetails) {
-                    $episodeId = $episodeDetails.id
-                    $episodeFileId = $episodeDetails.episodeFileId
-                    Write-Host "Episode ID: $episodeId, Episode File ID: $episodeFileId"
+                        $languageName = Map-LanguageCode -issueMessage $payload.message -languageMap $languageMap
+                        Write-Host "Mapped Language Name: $languageName"
 
-                    $languageName = Map-LanguageCode -issueMessage $payload.message -languageMap $languageMap
-                    Write-Host "Mapped Language Name: $languageName"
+                        $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
+                        Write-Host "Subtitle Path: $newSubtitlePath"
 
-                    $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                    Write-Host "Subtitle Path: $newSubtitlePath"
+                        if ($newSubtitlePath) {
+                            $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
+                            Write-Host "Extracted Language Code: $languageCode"
+                            
+                            $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
+                            $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&apikey=$bazarrApiKey"
+                            Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
 
-                    if ($newSubtitlePath) {
-                        $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
-                        Write-Host "Extracted Language Code: $languageCode"
-                        
-                        $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
-                        $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&apikey=$bazarrApiKey"
-                        Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+                            try {
+                                $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
+                                Write-Host "Bazarr response: Synced"
 
-                        try {
-                            $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                            Write-Host "Bazarr response: Synced"
-                        } catch {
-                            Write-Host "Failed to send PATCH request to Bazarr: $_"
+                                # Post a comment to Overseerr
+                                Post-OverseerrComment -issueId $payload.issue.issue_id -message "Subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+
+                                # Resolve the issue in Overseerr
+                                Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                            } catch {
+                                Write-Host "Failed to send PATCH request to Bazarr: $_"
+                            }
+                        } else {
+                            Write-Host "Subtitle path not found in Bazarr"
                         }
                     } else {
-                        Write-Host "Subtitle path not found in Bazarr"
+                        Write-Host "Episode details not found in Sonarr"
                     }
                 } else {
-                    Write-Host "Episode details not found in Sonarr"
+                    Write-Host "Affected Episode missing, fetching all episodes for season: $affectedSeason"
+                    $episodes = Get-SonarrEpisodesBySeason -seriesId $seriesId -seasonNumber ([int]$affectedSeason) -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
+                    if ($episodes) {
+                        $languageName = Map-LanguageCode -issueMessage $payload.message -languageMap $languageMap
+                        Write-Host "Mapped Language Name: $languageName"
+
+                        $allSubtitlesSynced = $true
+                        foreach ($episode in $episodes) {
+                            $episodeId = $episode.id
+                            Write-Host "Processing episode ID: $episodeId"
+
+                            $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
+                            Write-Host "Subtitle Path: $newSubtitlePath"
+
+                            if ($newSubtitlePath) {
+                                $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
+                                Write-Host "Extracted Language Code: $languageCode"
+                                
+                                $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
+                                $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&apikey=$bazarrApiKey"
+                                Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+
+                                try {
+                                    $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
+                                    Write-Host "Bazarr response: Synced"
+                                } catch {
+                                    Write-Host "Failed to send PATCH request to Bazarr: $_"
+                                    $allSubtitlesSynced = $false
+                                }
+                            } else {
+                                Write-Host "Subtitle path not found in Bazarr for episode ID: $episodeId"
+                                $allSubtitlesSynced = $false
+                            }
+                        }
+                        if ($allSubtitlesSynced) {
+                            # Post a comment to Overseerr
+                            Post-OverseerrComment -issueId $payload.issue.issue_id -message "All subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+
+                            # Resolve the issue in Overseerr
+                            Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                        } else {
+                            Write-Host "Not all subtitles were synced successfully"
+                        }
+                    } else {
+                        Write-Host "No episodes found for season: $affectedSeason"
+                    }
                 }
             } else {
                 Write-Host "Series ID not found in Sonarr"
@@ -270,7 +410,7 @@ function Handle-Webhook {
     }
 }
 
-# Set up an HTTP listener
+# HTTP listener
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://*:$port/")
 $listener.Start()
@@ -302,5 +442,5 @@ while ($true) {
     }
 }
 
-# Stop the listener (use Ctrl+C to stop the script)
+# Stop the listener
 $listener.Stop()
