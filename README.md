@@ -12,15 +12,17 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 - **Bazarr Integration**: Synchronize subtitles using Bazarr, including support for 4K media and HI subtitles.
 - **Language Mapping**: Map keywords to language names based on webhook messages.
 - **Audio Sync**: Uses the first audio track to sync subtitles to.
+- **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved. 🆕
+- **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.🆕
 
 ## Future plans
 
-- **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
-- **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
+- **Improve the handling of multiple Payloads**
 
 ## Known issues (WIP)
 
-- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~ - Fixed in v1.0.1
+- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~ :
+- **Handling Multiple Payloads** - in a case where multiple payloads are sent while one is already being processed, the rest could fail. Looking into a way to resolve this ⚠️
 
 ## Getting Started
 
@@ -67,10 +69,6 @@ In your Overseerr instance go to:
 4. Wait for the subtitles to be synced
 
 As long as the issue message contains keywords that have been mapped to match the desired language, the contents of the message can be anything (see preview examples).
-
-**ALWAYS SPECIFY THE SEASON AND EPISODE FOR SERIES**
-
-The time varies based on your system, but in my tests 1080p media takes less than 5 min while 4K could take less than 10 min to sync subtitles to (due to the larger size).
 
 ## Preview
 
