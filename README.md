@@ -23,7 +23,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Future plans
 
-- **Add label to media using Plex API**: if you're using labels to make your users experience more personalised, this will enable them to add their own label to media that's already available on the server but was hidden to them
+- **Add label to media using Plex API**: if you're using labels to make your users experience more personalised, this will enable them to add their own label to media that's already available on the server, making it available to them as well
 
 ## Known issues (WIP)
 
