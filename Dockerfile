@@ -17,6 +17,8 @@ ENV OVERSEERR_URL=""
 ENV PORT=8089
 ENV LANGUAGE_MAP="{}"
 ENV SYNC_KEYWORDS='[]'
+ENV PLEX_TOKEN=""
+ENV PLEX_HOST=""
 
 # Copy the PowerShell script into the Docker image
 COPY overr-sync.ps1 /overr-sync.ps1
