@@ -50,7 +50,7 @@ These instructions will help you set up and run Overr-Syncerr on your local mach
    git clone https://github.com/gssariev/overr-syncerr.git
    cd overr-syncerr
 3. **Edit docker-compose.yml:**
-   Open the docker-compose.yml file and replace the placeholders with your actual API keys, URLs, Ports and map keywords to the subtitle languages you use in Bazarr (look at the example structure in the docker-compose)
+   Replace the placeholders with your actual API keys, URLs, Ports, Plex URL and Token, and map keywords to the subtitle languages you use in Bazarr - [Docker Compose](https://github.com/gssariev/overr-syncerr/blob/main/docker-compose.yml)
 4. **Run the Docker container using Docker Compose:**
    Use Docker Compose to build and run the container.
    ```sh
@@ -70,11 +70,18 @@ In your Overseerr instance go to:
 
 ### Usage
 
+#### Subtitle sync
 1. In Overserr, navigate to the media that has unsynced subtitles
-2. Report a subtitle issue
+2. Report a 'Subtitle' issue
 3. Mention the langauge of the subtitles (using the specific pre-mapped keywords), if the media is 4K and if the subtitles are HI or not, and if the media needs to be synced (using the specific pre-mapped sync keywords)
 4. Bazarr will start syncing the subtitles to the first audio track
 5. Upon completion, Overseerr will reply to the created subtitle issue and mark it as resolved
+
+#### Plex Label
+1. In Overseerr, navigate to the media that you want to add your label to
+2. Report a 'Other' issue type
+3. In the issue message, type: Add to library
+4. Once the label has been added, Overseerr will reply to the created issue mark it as resolved
 
 ## Preview
 
