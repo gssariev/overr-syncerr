@@ -20,10 +20,11 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 - **Audio Sync**: Uses the first audio track to sync subtitles.
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
-
+- **Label media based on Plex user**: Create a personalised experience for your users by letting them see the media they want to see using labels (inspired by and works best in combination with [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections) ) More info in **Usage** section.
+  
 ## Future plans
 
-- **Add label to media using Plex API**: if you're using labels to make your users experience more personalised, this will enable them to add their own label to media that's already available on the server, making it available to them as well
+-**Add labels to other libraries** - currenlty limited to Movies & Series
 
 ## Known issues (WIP)
 
