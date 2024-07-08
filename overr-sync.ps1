@@ -15,6 +15,7 @@ $overseerrApiKey = $env:OVERSEERR_API_KEY
 $overseerrUrl = $env:OVERSEERR_URL
 $plexToken = $env:PLEX_TOKEN
 $plexHost = $env:PLEX_HOST
+$animeSectionId = $env:ANIME_SECTION_ID
 $port = $env:PORT
 
 # Language Map and Sync Keywords
@@ -181,7 +182,7 @@ function Resolve-OverseerrIssue {
     }
 }
 
-# Create a Queue
+# Create a Payload Queue
 $queue = [System.Collections.Queue]::new()
 
 # Function to enqueue payloads
@@ -217,7 +218,7 @@ function Handle-Webhook {
     }
 }
 
-# Function to handle 'SUBTITLES' issue type
+# Function to handle 'SUBTITLES' issue type for substitles sync
 function Handle-SubtitlesIssue {
     param ([psobject]$payload)
 
@@ -231,21 +232,12 @@ function Handle-SubtitlesIssue {
         return
     }
 
-    if ($is4K) {
-        $bazarrApiKey = $bazarr4kApiKey
-        $bazarrUrl = $bazarr4kUrl
-        $radarrApiKey = $radarr4kApiKey
-        $radarrUrl = $radarr4kUrl
-        $sonarrApiKey = $sonarr4kApiKey
-        $sonarrUrl = $sonarr4kUrl
-    } else {
-        $bazarrApiKey = $env:BAZARR_API_KEY
-        $bazarrUrl = $env:BAZARR_URL
-        $radarrApiKey = $env:RADARR_API_KEY
-        $radarrUrl = $env:RADARR_URL
-        $sonarrApiKey = $env:SONARR_API_KEY
-        $sonarrUrl = $env:SONARR_URL
-    }
+    $bazarrApiKey = if ($is4K) { $bazarr4kApiKey } else { $bazarrApiKey }
+    $bazarrUrl = if ($is4K) { $bazarr4kUrl } else { $bazarrUrl }
+    $radarrApiKey = if ($is4K) { $radarr4kApiKey } else { $radarrApiKey }
+    $radarrUrl = if ($is4K) { $radarr4kUrl } else { $radarrUrl }
+    $sonarrApiKey = if ($is4K) { $sonarr4kApiKey } else { $sonarrApiKey }
+    $sonarrUrl = if ($is4K) { $sonarr4kUrl } else { $sonarrUrl }
 
     Write-Host "Using bazarrUrl: $bazarrUrl"
 
@@ -378,7 +370,7 @@ function Handle-SubtitlesIssue {
                     }
                     if ($allSubtitlesSynced) {
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message "All subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
-                        Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                        Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrApiKey
                     } else {
                         Write-Host "Not all subtitles were synced successfully"
                     }
@@ -394,7 +386,7 @@ function Handle-SubtitlesIssue {
     }
 }
 
-# Function to handle 'OTHER' issue type
+# Function to handle 'OTHER' issue type for adding user label to Plex media
 function Handle-OtherIssue {
     param ([psobject]$payload)
 
@@ -415,6 +407,23 @@ function Handle-OtherIssue {
     } elseif ($mediaType -eq "tv") {
         $sectionId = "2"
         $mediaTypeForSearch = "2"
+
+        # Additional API call to check seriesType
+        $tmdbId = $payload.media.tmdbId
+        $seriesLookupUrl = "$overseerrUrl/service/sonarr/lookup/$tmdbId"
+        Write-Host "Series Lookup URL: $seriesLookupUrl"
+        try {
+            $headers = @{
+                'X-Api-Key' = $overseerrApiKey
+            }
+            $seriesDetails = Invoke-RestMethod -Uri $seriesLookupUrl -Method Get -Headers $headers
+            if ($seriesDetails[0].seriesType -eq "anime") {
+                $sectionId = $animeSectionId
+            }
+        } catch {
+            Write-Host "Error fetching series details: $_"
+            return
+        }
     } else {
         Write-Host "Unsupported media type: $mediaType"
         return
