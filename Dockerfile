@@ -19,6 +19,7 @@ ENV LANGUAGE_MAP="{}"
 ENV SYNC_KEYWORDS='[]'
 ENV PLEX_TOKEN=""
 ENV PLEX_HOST=""
+ENV ANIME_SECTION_ID=""
 
 # Copy the PowerShell script into the Docker image
 COPY overr-sync.ps1 /overr-sync.ps1
