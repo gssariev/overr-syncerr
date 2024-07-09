@@ -27,6 +27,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 ## Future plans
 
 - **Wiki**: Updating the Wiki
+- **Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series
 
 ## Known issues (WIP)
 
