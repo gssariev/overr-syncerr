@@ -174,6 +174,8 @@ function Resolve-OverseerrIssue {
     param ([string]$issueId, [string]$overseerrApiKey, [string]$overseerrUrl)
     $url = "$overseerrUrl/issue/$issueId/resolved"
     
+    Write-Host "Marking issue as resolved with URL: $url"
+    
     try {
         $response = Invoke-RestMethod -Uri $url -Method Post -Headers @{ 'X-Api-Key' = $overseerrApiKey }
         Write-Host "Marked issue $issueId as resolved in Overseerr"
@@ -370,7 +372,7 @@ function Handle-SubtitlesIssue {
                     }
                     if ($allSubtitlesSynced) {
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message "All subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
-                        Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrApiKey
+                        Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     } else {
                         Write-Host "Not all subtitles were synced successfully"
                     }
@@ -483,9 +485,17 @@ function Handle-OtherIssue {
 
     $currentLabels = @()
     if ($metadata.MediaContainer.Video.Label) {
-        $currentLabels = $metadata.MediaContainer.Video.Label | ForEach-Object { $_.tag }
+        if ($metadata.MediaContainer.Video.Label -is [System.Array]) {
+            $currentLabels = $metadata.MediaContainer.Video.Label | ForEach-Object { $_.tag }
+        } else {
+            $currentLabels = @($metadata.MediaContainer.Video.Label.tag)
+        }
     } elseif ($metadata.MediaContainer.Directory.Label) {
-        $currentLabels = $metadata.MediaContainer.Directory.Label | ForEach-Object { $_.tag }
+        if ($metadata.MediaContainer.Directory.Label -is [System.Array]) {
+            $currentLabels = $metadata.MediaContainer.Directory.Label | ForEach-Object { $_.tag }
+        } else {
+            $currentLabels = @($metadata.MediaContainer.Directory.Label.tag)
+        }
     }
     Write-Host "Current Labels: $($currentLabels -join ', ')"
 
