@@ -32,8 +32,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Known issues (WIP)
 
-- ~~**Empty Bazarr response in console log**: This is more of a visual bug when Bazarr is done synchronizing the subtitle and does **NOT** prevent the script from working.~~
-- ~~**Handling Multiple Payloads** - in a case where multiple payloads are sent while one is already being processed, the rest could fail. Looking into a way to resolve this~~
+- **Label for TV Shows**: in some cases the logic will fail due to a mismatch between the title of the series in Overseerr and in Plex
 
 ## Getting Started
 
