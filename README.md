@@ -31,7 +31,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Known issues (WIP)
 
--
+- **Discussions:** if discover any bugs or have a suggestion on how to improve the project, feel free to create a discussion or post an issue :)
 
 ## Getting Started
 
@@ -138,20 +138,9 @@ In your Overseerr instance go to:
 3. In the issue message, type: Add to library
 4. Once the label has been added, Overseerr will reply to the created issue mark it as resolved
 
-## Preview
-
-### Movies
-<img src="./previews/movies.gif">
-
-### Series/Anime
-<img src="./previews/series.gif">
-
-### Script Log
-<img src="./previews/script_log.png">
-
 ## Found a bug?
 
-If you found an issue or have ideas for improving this project, please submit an issue using the issue tab above.
+If you found an issue? Feel free to submit it over at the issues tab :)
 
 
 ## License
