@@ -1,4 +1,6 @@
-FROM mcr.microsoft.com/powershell:7.1.3-ubuntu-20.04
+FROM mcr.microsoft.com/powershell:latest
+
+WORKDIR /app
 
 ENV BAZARR_API_KEY=""
 ENV BAZARR_URL=""
@@ -19,10 +21,10 @@ ENV LANGUAGE_MAP="{}"
 ENV SYNC_KEYWORDS='[]'
 ENV PLEX_TOKEN=""
 ENV PLEX_HOST=""
-ENV ANIME_SECTION_ID=""
+ENV ANIME_LIBRARY_NAME=""
+ENV MOVIES_LIBRARY_NAME=""
+ENV SERIES_LIBRARY_NAME=""
 
-# Copy the PowerShell script into the Docker image
-COPY overr-sync.ps1 /overr-sync.ps1
+COPY . .
 
-# Set the entry point to run the PowerShell script
-ENTRYPOINT ["pwsh", "/overr-sync.ps1"]
+CMD ["pwsh", "-File", "/app/overr-syncerr-main.ps1"]
