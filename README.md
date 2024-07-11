@@ -28,11 +28,10 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 - **Wiki**: Updating the Wiki
 - **Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series
-- **Library ID**: exploring a way to get library id based on library name
 
 ## Known issues (WIP)
 
-- **Label for TV Shows**: in some cases the logic will fail due to a mismatch between the title of the series in Overseerr and in Plex
+-
 
 ## Getting Started
 
@@ -53,7 +52,60 @@ These instructions will help you set up and run Overr-Syncerr on your local mach
    git clone https://github.com/gssariev/overr-syncerr.git
    cd overr-syncerr
 3. **Edit docker-compose.yml:**
-   Replace the placeholders with your actual API keys, URLs, Ports, Plex URL and Token, and map keywords to the subtitle languages you use in Bazarr - [Docker Compose](https://github.com/gssariev/overr-syncerr/blob/main/docker-compose.yml)
+```yaml
+services:
+  overr-syncerr:
+    image: gsariev/overr-syncerr:latest
+    container_name: overr-syncerr
+    ports:
+      - "8089:8089"
+    environment:
+    
+      BAZARR_API_KEY: "YOUR_BAZARR_API_KEY"
+      BAZARR_URL: "http://BAZARR_IP:BAZARR_PORT/api"
+      
+      RADARR_API_KEY: "YOUR_RADARR_API_KEY"
+      RADARR_URL: "http://RADARR_IP:RADARR_PORT/api/v3"
+      
+      SONARR_API_KEY: "YOUR_SONARR_API_KEY"
+      SONARR_URL: "http://SONARR_IP:SONARR_PORT/api/v3"
+      
+      BAZARR_4K_API_KEY: "YOUR_BAZARR_4K_API_KEY"
+      BAZARR_4K_URL: "http://BAZARR_4K_IP:BAZARR_4K_PORT/api"
+      
+      RADARR_4K_API_KEY: "YOUR_RADARR_4K_API_KEY"
+      RADARR_4K_URL: "http://RADARR_4K_IP:RADARR_4K_PORT/api/v3"
+      
+      SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
+      SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
+
+      OVERSEERR_API_KEY: "YOUR_OVERSEERR_API"
+      OVERSEERR_URL: "http://YOUR_OVERSEERR_URL:OVERSEERR_PORT/api/v1"
+
+      PLEX_TOKEN: "YOUR_PLEX_TOKEN"
+      PLEX_HOST: "http://YOUR_PLEX_SERVER_URL:PLEX_SERVER_PORT"
+
+      #Library names for getting library IDs and adding user-label to media. Example below:
+      ANIME_LIBRARY_NAME: "Anime"
+      MOVIES_LIBRARY_NAME: "Movies"
+      SERIES_LIBRARY_NAME: "Series"
+      
+      PORT: 8089
+      
+      #Map specific keywords to your subtitle languages. Examples below:
+      LANGUAGE_MAP: '{"da":"Danish",
+      "en":"English",
+      "bg":"Bulgarian",
+      "dansk":"Danish",
+      "english":"English",
+      "danske":"Danish",
+      "eng":"English"}'
+
+      SYNC_KEYWORDS: '["sync", "out of sync", "messed up", "synchronization"]' # Replace with your actual sync keywords
+      
+      restart: unless-stopped
+```
+   
 4. **Run the Docker container using Docker Compose:**
    Use Docker Compose to build and run the container.
    ```sh
