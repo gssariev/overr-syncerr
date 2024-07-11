@@ -49,6 +49,7 @@ function Handle-SubtitlesIssue {
                 $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                 $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&reference=(a%3A0)&apikey=$bazarrApiKey"
                 Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+				Post-OverseerrComment -issueId $payload.issue.issue_id -message "Syncing of $languageName subtitles started." -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
                 try {
                     $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
