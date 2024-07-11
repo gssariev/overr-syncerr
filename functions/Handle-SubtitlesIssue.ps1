@@ -54,7 +54,7 @@ function Handle-SubtitlesIssue {
                     $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
                     Write-Host "Bazarr response: Synced"
 
-                    Post-OverseerrComment -issueId $payload.issue.issue_id -message "Subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                    Post-OverseerrComment -issueId $payload.issue.issue_id -message "$languageName subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                 } catch {
                     Write-Host "Failed to send PATCH request to Bazarr: $_"
@@ -96,12 +96,13 @@ function Handle-SubtitlesIssue {
                         $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                         $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&apikey=$bazarrApiKey"
                         Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+						Post-OverseerrComment -issueId $payload.issue.issue_id -message "Syncing of $languageName subtitles started." -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
                         try {
                             $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
                             Write-Host "Bazarr response: Synced"
 
-                            Post-OverseerrComment -issueId $payload.issue.issue_id -message "Subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                            Post-OverseerrComment -issueId $payload.issue.issue_id -message "$languageName subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                             Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         } catch {
                             Write-Host "Failed to send PATCH request to Bazarr: $_"
@@ -118,8 +119,10 @@ function Handle-SubtitlesIssue {
                 if ($episodes) {
                     $languageName = Map-LanguageCode -issueMessage $payload.message -languageMap $languageMap
                     Write-Host "Mapped Language Name: $languageName"
-
-                    $allSubtitlesSynced = $true
+					
+                    Post-OverseerrComment -issueId $payload.issue.issue_id -message "Syncing of multiple $languageName subtitles started." -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                    
+					$allSubtitlesSynced = $true
                     foreach ($episode in $episodes) {
                         $episodeId = $episode.id
                         Write-Host "Processing episode ID: $episodeId"
@@ -148,7 +151,7 @@ function Handle-SubtitlesIssue {
                         }
                     }
                     if ($allSubtitlesSynced) {
-                        Post-OverseerrComment -issueId $payload.issue.issue_id -message "All subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+                        Post-OverseerrComment -issueId $payload.issue.issue_id -message "All $languageName subtitles have been synced" -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     } else {
                         Write-Host "Not all subtitles were synced successfully"
