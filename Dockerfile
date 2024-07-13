@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:latest
+FROM mcr.microsoft.com/powershell:7.1.3-ubuntu-20.04
 
 WORKDIR /app
 
@@ -27,4 +27,4 @@ ENV SERIES_LIBRARY_NAME=""
 
 COPY . .
 
-CMD ["pwsh", "-File", "/app/overr-syncerr-main.ps1"]
+ENTRYPOINT ["pwsh", "/app/overr-syncerr-main.ps1"]
