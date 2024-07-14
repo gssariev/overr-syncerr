@@ -6,18 +6,23 @@ function Handle-SubtitlesIssue {
     $is4K = $payload.message -match "(?i)4K"
     $isHI = $payload.message -match "(?i)hi"
     $containsSyncKeyword = Contains-SyncKeyword -issueMessage $payload.message -syncKeywords $syncKeywords
-    if (-not $containsSyncKeyword) {
-        Write-Host "Issue message does not contain sync keywords, skipping."
+    $containsAdjustBy = $payload.message -match "(?i)adjust by"
+    $containsOffset = $payload.message -match "(?i)offset"
+
+    if (-not $containsSyncKeyword -and -not $containsAdjustBy -and -not $containsOffset) {
+        Write-Host "Issue message does not contain sync, adjust by, or offset keywords, skipping."
         return
     }
 
     $offset = Extract-Offset -message $payload.message
+    $shiftOffset = ShiftOffset -message $payload.message
     $bazarrApiKey = if ($is4K) { $bazarr4kApiKey } else { $bazarrApiKey }
     $bazarrUrl = if ($is4K) { $bazarr4kUrl } else { $bazarrUrl }
     $radarrApiKey = if ($is4K) { $radarr4kApiKey } else { $radarrApiKey }
     $radarrUrl = if ($is4K) { $radarr4kUrl } else { $radarrUrl }
     $sonarrApiKey = if ($is4K) { $sonarr4kApiKey } else { $sonarrApiKey }
     $sonarrUrl = if ($is4K) { $sonarr4kUrl } else { $sonarrUrl }
+
 
     Write-Host "Using bazarrUrl: $bazarrUrl"
 
@@ -48,11 +53,14 @@ function Handle-SubtitlesIssue {
                 Write-Host "Extracted Language Code: $languageCode"
                 
                 $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
-                $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&reference=(a%3A0)&gss=true"
-                if ($offset) {
-                    $bazarrUrlWithParams += "&max_offset_seconds=$offset"
+                if ($containsAdjustBy -and $shiftOffset -ne $null) {
+                    $shiftOffsetEncoded = [System.Web.HttpUtility]::UrlEncode($shiftOffset)
+                    $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=shift_offset($shiftOffsetEncoded)&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&apikey=$bazarrApiKey"
+                } elseif ($containsOffset -and $offset -ne $null) {
+                    $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&reference=(a%3A0)&gss=true&max_offset_seconds=$offset&apikey=$bazarrApiKey"
+                } else {
+                    $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                 }
-                $bazarrUrlWithParams += "&apikey=$bazarrApiKey"
                 Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
                 Post-OverseerrComment -issueId $payload.issue.issue_id -message "Syncing of $languageName subtitles started." -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
@@ -100,11 +108,14 @@ function Handle-SubtitlesIssue {
                         Write-Host "Extracted Language Code: $languageCode"
                         
                         $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
-                        $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true"
-                        if ($offset) {
-                            $bazarrUrlWithParams += "&max_offset_seconds=$offset"
+                        if ($containsAdjustBy -and $shiftOffset -ne $null) {
+                            $shiftOffsetEncoded = [System.Web.HttpUtility]::UrlEncode($shiftOffset)
+                            $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=shift_offset($shiftOffsetEncoded)&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&apikey=$bazarrApiKey"
+                        } elseif ($containsOffset -and $offset -ne $null) {
+                            $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&max_offset_seconds=$offset&apikey=$bazarrApiKey"
+                        } else {
+                            $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                         }
-                        $bazarrUrlWithParams += "&apikey=$bazarrApiKey"
                         Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message "Syncing of $languageName subtitles started." -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
@@ -145,11 +156,14 @@ function Handle-SubtitlesIssue {
                             Write-Host "Extracted Language Code: $languageCode"
                             
                             $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
-                            $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true"
-                            if ($offset) {
-                                $bazarrUrlWithParams += "&max_offset_seconds=$offset"
+                            if ($containsAdjustBy -and $shiftOffset -ne $null) {
+                                $shiftOffsetEncoded = [System.Web.HttpUtility]::UrlEncode($shiftOffset)
+                                $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=shift_offset($shiftOffsetEncoded)&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&apikey=$bazarrApiKey"
+                            } elseif ($containsOffset -and $offset -ne $null) {
+                                $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&max_offset_seconds=$offset&apikey=$bazarrApiKey"
+                            } else {
+                                $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                             }
-                            $bazarrUrlWithParams += "&apikey=$bazarrApiKey"
                             Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
 
                             try {
