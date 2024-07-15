@@ -18,7 +18,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 - **Full Sonarr and Radarr Integration**: Easily fetch series and movie details from Sonarr and Radarr.
 - **Bazarr Integration**: Synchronize subtitles using Bazarr, including support for 4K instances and HI subtitles.
 - **Language Mapping**: Map keywords to language names based on webhook messages.
-- **Audio Sync**: Uses the first audio track to sync subtitles.
+- **Subtitles**: Send 'sync', 'translate' and manual adjustment requests to Bazarr (using the 1st audio track + GSS).
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
 - **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels (inspired by and works best in combination with [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections)). (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
