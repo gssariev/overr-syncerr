@@ -1,10 +1,4 @@
 function Map-LanguageCode {
-    param ([string]$issueMessage, [hashtable]$languageMap)
-    $lowercaseMessage = $issueMessage.ToLower()
-    foreach ($key in $languageMap.Keys) {
-        if ($lowercaseMessage.Contains($key)) {
-            return $languageMap[$key]
-        }
-    }
-    return 'English'
+    param ([string]$languageCode, [hashtable]$languageMap)
+    return $languageMap[$languageCode]
 }
