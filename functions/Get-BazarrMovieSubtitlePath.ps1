@@ -5,8 +5,10 @@ function Get-BazarrMovieSubtitlePath {
         $response = Invoke-RestMethod -Uri $url -Method Get
         foreach ($movie in $response.data) {
             foreach ($subtitle in $movie.subtitles) {
-                if ($subtitle.name -eq $languageName -and $subtitle.hi -eq $hearingImpaired) {
-                    return $subtitle.path
+                if ($subtitle.name -eq $languageName -and $subtitle.path) {
+                    if ($subtitle.hi -eq $hearingImpaired -or -not $hearingImpaired) {
+                        return $subtitle.path
+                    }
                 }
             }
         }
