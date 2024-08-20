@@ -39,12 +39,18 @@ try {
     Write-Host "Error parsing language map: $_"
 }
 
-try {
-    $syncKeywords = ConvertFrom-Json -InputObject $syncKeywordsJson
-    Write-Host "Sync keywords parsed successfully"
-} catch {
-    $syncKeywords = @('sync', 'out of sync', 'synchronize', 'synchronization')
-    Write-Host "Error parsing sync keywords: $_"
+if (-not $syncKeywordsJson) {
+    try {
+        $syncKeywords = ConvertFrom-Json -InputObject $syncKeywordsJson
+        Write-Host "Sync keywords parsed successfully"
+    } catch {
+        $syncKeywords = @('sync', 'out of sync', 'synchronize', 'synchronization')
+        Write-Host "Error parsing sync keywords: $_"
+    }
+}
+else {
+    $syncKeywords = @("")
+    Write-Host "Sync keywords disabled"
 }
 
 # Fetch Plex Library IDs

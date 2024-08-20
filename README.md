@@ -102,7 +102,8 @@ services:
       "eng":"English"}'
 
       SYNC_KEYWORDS: '["sync", "out of sync", "messed up", "synchronization"]' # Replace with your actual sync keywords
-      
+      #SYNC_KEYWORDS: "" #Alternatively set any keywords (even a blank description) to initiate a sync
+
       restart: unless-stopped
 ```
    
