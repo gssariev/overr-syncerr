@@ -22,12 +22,12 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
 - **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels (inspired by and works best in combination with [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections)). (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
-  
-  
+- **Jellyseerr Support**: this project also works with Jellyseerr
+    
 ## Future plans
 
 - **Wiki**: Updating the Wiki
-- **Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series
+- ~~**Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series~~ 
 
 ## Known issues (WIP)
 
@@ -79,6 +79,7 @@ services:
       SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
       SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
 
+      # Enter your Jellyseerr API Key and URL instead if using Jellyseerr
       OVERSEERR_API_KEY: "YOUR_OVERSEERR_API"
       OVERSEERR_URL: "http://YOUR_OVERSEERR_URL:OVERSEERR_PORT/api/v1"
 
@@ -102,7 +103,6 @@ services:
       "eng":"English"}'
 
       SYNC_KEYWORDS: '["sync", "out of sync", "messed up", "synchronization"]' # Replace with your actual sync keywords
-      #SYNC_KEYWORDS: "" #Alternatively set any keywords (even a blank description) to initiate a sync
 
       restart: unless-stopped
 ```
@@ -139,13 +139,23 @@ In your Overseerr instance go to:
 3. In the issue message, type: Add to library
 4. Once the label has been added, Overseerr will reply to the created issue mark it as resolved
 
-## Found a bug?
+## Contributors
 
-If you found an issue? Feel free to submit it over at the issues tab :)
+Big thank you to the people helping furher develop this project!
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kirsch33"><img src="https://avatars1.githubusercontent.com/u/37373320?v=4?s=100" width="100px;" alt="sct"/><br /><sub><b>kirsch33</b></sub></a><br /><a href="https://github.com/gssariev/overr-syncerr/tree/kirsch33-patch-1" title="Code">💻</a> </td> 
+    </tr>
+    </tbody>
+</table>
 
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
    
 
 
