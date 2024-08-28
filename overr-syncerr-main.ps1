@@ -3,6 +3,9 @@ Get-ChildItem -Path './functions/*.ps1' | ForEach-Object { . $_.FullName }
 
 $queue = [System.Collections.Queue]::new()
 
+# Check the environmental variable to enable or disable the Media Available handling
+$enableMediaAvailableHandling = $env:ENABLE_MEDIA_AVAILABLE_HANDLING -eq "true"
+
 $bazarrApiKey = $env:BAZARR_API_KEY
 $bazarrUrl = $env:BAZARR_URL
 $radarrApiKey = $env:RADARR_API_KEY
