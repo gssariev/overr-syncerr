@@ -34,6 +34,10 @@ services:
       ANIME_LIBRARY_NAME: "Anime"
       MOVIES_LIBRARY_NAME: "Movies"
       SERIES_LIBRARY_NAME: "Series"
+
+      #Optional auto-labeling of requested media in Plex using requester username
+      #Default is set to 'false'
+      ENABLE_MEDIA_AVAILABLE_HANDLING: false
       
       PORT: 8089
       
