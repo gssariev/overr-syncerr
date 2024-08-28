@@ -1,6 +1,6 @@
 # Overr-Syncerr
 
-Overr-Syncerr is a script designed to automate the management of subtitle synchronization issues across your media library. By leveraging **[Overseerr](https://overseerr.dev)**'s built-in webhook and issue reporting functionality, this script allows users to specify the subtitles they need synchronized. It seamlessly integrates with your existing services such as **[Sonarr](https://sonarr.tv/)**, **[Radarr](https://radarr.video/)**, and **[Bazarr](https://www.bazarr.media)**, making the entire process of subtitle synchronization more automated.
+Overr-Syncerr is a script designed to automate the management of subtitle synchronization issues across your media library. By leveraging **[Overseerr](https://overseerr.dev)** and **[Jellyseerr](https://github.com/Fallenbagel/jellyseerr)**'s built-in webhook and issue reporting functionality, this script allows users to specify the subtitles they need synchronized. It seamlessly integrates with your existing services such as **[Sonarr](https://sonarr.tv/)**, **[Radarr](https://radarr.video/)**, and **[Bazarr](https://www.bazarr.media)**, making the entire process of subtitle synchronization more automated.
 
 <p align="center" >
   <a href="https://github.com/gssariev/overr-syncerr/releases"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/gssariev/overr-syncerr?style=flat&logo=github&logoColor=white&label=Latest%20Release"></a>
@@ -21,13 +21,14 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 - **Subtitles**: Send 'sync', 'translate' and manual adjustment requests to Bazarr (using the 1st audio track + GSS).
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
-- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels (inspired by and works best in combination with [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections)). (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
-- **Jellyseerr Support**: this project also works with Jellyseerr
+
+## Addititonal Features
+- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels. (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
+- **Auto-labellingt**: Option to label requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))
     
 ## Future plans
 
 - **Wiki**: Updating the Wiki
-- ~~**Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series~~ 
 
 ## Known issues (WIP)
 
@@ -90,7 +91,11 @@ services:
       ANIME_LIBRARY_NAME: "Anime"
       MOVIES_LIBRARY_NAME: "Movies"
       SERIES_LIBRARY_NAME: "Series"
-      
+
+      #Optional auto-labeling of requested media in Plex using requester username
+      #Default is set to 'false'
+      ENABLE_MEDIA_AVAILABLE_HANDLING: false
+
       PORT: 8089
       
       #Map specific keywords to your subtitle languages. Examples below:
