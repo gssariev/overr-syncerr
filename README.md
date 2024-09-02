@@ -12,6 +12,9 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
   <a href="https://github.com/gssariev/overr-syncerr/wiki"><img alt="Wiki" src="https://img.shields.io/badge/docs-wiki-forestgreen"></a>
 </p>
 
+## Getting Started
+
+Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 ## Current Features
 
@@ -29,10 +32,6 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 ## Known issues (WIP)
 
 - **Discussions:** if discover any bugs or have a suggestion on how to improve the project, feel free to create a discussion or post an issue :)
-
-## Getting Started
-
-Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 ### Want to help?
 - Looking for someone who can make a Unraid template
