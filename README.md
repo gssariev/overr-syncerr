@@ -9,7 +9,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
   <picture><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/gssariev/overr-syncerr?style=flat&logo=github&logoColor=white&label=Commits"></picture>
   <picture><img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues-closed/gssariev/overr-syncerr?style=flat&logo=github&logoColor=white"></picture>
   <picture><img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/gssariev/overr-syncerr?style=flat&logo=github&logoColor=white"></picture>
-  <a href="https://github.com/gssariev/overr-syncerr/wiki"><img alt="Wiki" src="https://img.shields.io/badge/docs-wiki-forestgreen"></a>
+  <a href="https://docs.overrsyncerr.info"><img alt="Wiki" src="https://img.shields.io/badge/docs-wiki-forestgreen"></a>
 </p>
 
 ## Getting Started
