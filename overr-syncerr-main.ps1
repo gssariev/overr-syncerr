@@ -1,11 +1,7 @@
 # Import Functions
 Get-ChildItem -Path './functions/*.ps1' | ForEach-Object { . $_.FullName }
 
-$queue = [System.Collections.Queue]::new()
-
-# Check the environmental variable to enable or disable the Media Available handling
-$enableMediaAvailableHandling = $env:ENABLE_MEDIA_AVAILABLE_HANDLING -eq "true"
-
+$requestIntervalCheck = $env:CHECK_REQUEST_INTERVAL
 $bazarrApiKey = $env:BAZARR_API_KEY
 $bazarrUrl = $env:BAZARR_URL
 $radarrApiKey = $env:RADARR_API_KEY
@@ -26,7 +22,10 @@ $animeLibraryName = $env:ANIME_LIBRARY_NAME
 $moviesLibraryName = $env:MOVIES_LIBRARY_NAME
 $seriesLibraryName = $env:SERIES_LIBRARY_NAME
 $port = $env:PORT
+$enableMediaAvailableHandling = $env:ENABLE_MEDIA_AVAILABLE_HANDLING -eq "true"
+$queue = [System.Collections.Queue]::new()
 
+$addLabelKeywords = $env:ADD_LABEL_KEYWORDS
 $languageMapJson = $env:LANGUAGE_MAP
 $syncKeywordsJson = $env:SYNC_KEYWORDS
 
@@ -42,18 +41,12 @@ try {
     Write-Host "Error parsing language map: $_"
 }
 
-if (-not $syncKeywordsJson) {
-    try {
-        $syncKeywords = ConvertFrom-Json -InputObject $syncKeywordsJson
-        Write-Host "Sync keywords parsed successfully"
-    } catch {
-        $syncKeywords = @('sync', 'out of sync', 'synchronize', 'synchronization')
-        Write-Host "Error parsing sync keywords: $_"
-    }
-}
-else {
-    $syncKeywords = @("")
-    Write-Host "Sync keywords disabled"
+try {
+    $syncKeywords = ConvertFrom-Json -InputObject $syncKeywordsJson
+    Write-Host "Sync keywords parsed successfully"
+} catch {
+    $syncKeywords = @('sync', 'out of sync', 'synchronize', 'synchronization')
+    Write-Host "Error parsing sync keywords: $_"
 }
 
 # Fetch Plex Library IDs
@@ -67,6 +60,16 @@ $seriesSectionId = $libraryIds[$seriesLibraryName]
 Write-Host "Anime Section ID: $animeSectionId"
 Write-Host "Movies Section ID: $moviesSectionId"
 Write-Host "Series Section ID: $seriesSectionId"
+
+
+# Check if the environment variable MONITOR_REQUESTS is set to true
+$monitorRequests = $env:MONITOR_REQUESTS -eq "true"
+
+if ($monitorRequests) {
+    Start-OverseerrRequestMonitor -overseerrUrl $overseerrUrl -plexHost $plexHost -plexToken $plexToken -overseerrApiKey $overseerrApiKey -seriesSectionId $seriesSectionId -animeSectionId $animeSectionId -requestIntervalCheck $requestIntervalCheck
+} else {
+    Write-Host "Request monitoring is not enabled. Skipping Overseerr request monitor."
+}
 
 # HTTP listener
 $listener = [System.Net.HttpListener]::new()
