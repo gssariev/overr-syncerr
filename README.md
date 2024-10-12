@@ -26,8 +26,9 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue.
 
 ## Addititonal Features
-- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels. (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
-- **Auto-labelling**: Option to label available requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))    
+- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels.
+- **Auto-labelling**: Option to label available requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))
+- **Translate Subs Using GPT**: Option to use OpenAI GPT instead of Google Translate for subtitle translation **OpenAI API Key Required**
 
 ## Known issues (WIP)
 
