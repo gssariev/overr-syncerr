@@ -44,14 +44,7 @@ These instructions will help you set up and run Overr-Syncerr on your local mach
 
 ### Installation
 
-1. **Pull the Docker image:**
-   ```sh
-   docker pull gsariev/overr-syncerr:latest
-2. **Clone the repository:**
-   ```sh
-   git clone https://github.com/gssariev/overr-syncerr.git
-   cd overr-syncerr
-3. **Edit docker-compose.yml:**
+**Docker-compose.yml:**
 ```yaml
 services:
   overr-syncerr:
@@ -79,8 +72,20 @@ services:
       SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
       SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
 
+      # Enter your Jellyseerr API Key and URL instead if using Jellyseerr
       OVERSEERR_API_KEY: "YOUR_OVERSEERR_API"
       OVERSEERR_URL: "http://YOUR_OVERSEERR_URL:OVERSEERR_PORT/api/v1"
+
+      ## Maintainerr Implementation
+      MAINTAINERR_URL: "http://MAINTAINERR_URL:PORT"
+      MAINTAINERR_API_KEY: "MAINTAINERR_API_KEY"
+      COLLECTION_IDS: 1,2         # Ids of collection to monitor
+      UNWATCHED_LIMIT: 1          # Amount of unwatched media to trigger Overseerr request ovveride
+      MOVIE_QUOTA_LIMIT: 1        # Movie quota limit
+      MOVIE_QUOTA_DAYS: 14        # Days for movie quota
+      TV_QUOTA_LIMIT: 1           # TV quota limit
+      TV_QUOTA_DAYS: 7            
+      ## End of Maintainerr Logic
 
       PLEX_TOKEN: "YOUR_PLEX_TOKEN"
       PLEX_HOST: "http://YOUR_PLEX_SERVER_URL:PLEX_SERVER_PORT"
@@ -89,7 +94,17 @@ services:
       ANIME_LIBRARY_NAME: "Anime"
       MOVIES_LIBRARY_NAME: "Movies"
       SERIES_LIBRARY_NAME: "Series"
+
+      #Optional auto-labeling of requested media in Plex using requester username
+      #Default is set to 'false'
+      ENABLE_MEDIA_AVAILABLE_HANDLING: false
       
+      #Monitor partially available series requests (optional)
+      MONITOR_REQUESTS: true
+      
+      #How often to check for partially available series requests (in seconds)
+      CHECK_REQUEST_INTERVAL: 900
+
       PORT: 8089
       
       #Map specific keywords to your subtitle languages. Examples below:
@@ -103,7 +118,27 @@ services:
 
       SYNC_KEYWORDS: '["sync", "out of sync", "messed up", "synchronization"]' # Replace with your actual sync keywords
       
+      ADD_LABEL_KEYWORDS: '["add to library", "jeg vil se", "tilføj til bibliotek", "tilføj"]'
+      
+      ####### GPT TRANSLATION - IGNORE IF NOT USING
+      ENABLE_GPT: false
+      MODEL_GPT: "gpt-4o" # Use your preffered model
+      OPEN_AI_API_KEY: "YOU_OPENAI_API_KEY"
+      MAX_REQUEST_BYTES: 2000 # The amount of information send with each requests.
+      MAX_TOKENS: 4000 # Max tokens for the chosel GPT model
+      CHUNK_OVERLAP: 2  # Overlap of one subtitle line between chunks
+      REQUEST_DELAY: 2 # Delay between server requests in seconds
+      
+      MOVIE_PATH_MAPPING: M:\Movies # Map to match the Bazarr path to your movies
+      TV_PATH_MAPPING: M:\TV # Map to match the Bazarr path to your series 
+      
+    volumes:
+      - M:\Movies:/mnt/movies
+      - M:\TV:/mnt/tv
+     ####### END OF GPT TRANSLATION
+      
       restart: unless-stopped
+
 ```
    
 4. **Run the Docker container using Docker Compose:**
