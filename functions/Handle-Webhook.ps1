@@ -3,10 +3,32 @@ function Handle-Webhook {
 
     $payload = $jsonPayload | ConvertFrom-Json
 
-    if ($payload.issue.issue_type -eq "SUBTITLES") {
+    # Retrieve the ADD_LABEL_KEYWORDS environment variable and convert it from JSON
+    $addLabelKeywords = $env:ADD_LABEL_KEYWORDS | ConvertFrom-Json
+
+    # Check for MEDIA_AVAILABLE notification type
+    if ($payload.notification_type -eq "MEDIA_AVAILABLE") {
+        Handle-MediaAvailable -payload $payload
+    } elseif ($payload.issue.issue_type -eq "SUBTITLES") {
         Handle-SubtitlesIssue -payload $payload
-    } elseif ($payload.issue.issue_type -eq "OTHER" -and $payload.message -match "(?i)add to library") {
-        Handle-OtherIssue -payload $payload
+    } elseif ($payload.issue.issue_type -eq "OTHER") {
+        # Convert the message to lowercase and trim whitespace
+        $message = $payload.message.ToLower().Trim()
+
+        # Check if the message matches any of the "add label" keywords
+        $matchFound = $false
+        foreach ($keyword in $addLabelKeywords) {
+            if ($message -match [regex]::Escape($keyword.Trim())) {
+                $matchFound = $true
+                break
+            }
+        }
+
+        if ($matchFound) {
+            Handle-OtherIssue -payload $payload
+        } else {
+            Write-Host "Received issue is not handled."
+        }
     } else {
         Write-Host "Received issue is not handled."
     }
