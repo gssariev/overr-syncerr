@@ -1,6 +1,53 @@
 function Handle-OtherIssue {
     param ([psobject]$payload)
 
+    
+    $reportedByPlexUsername = $payload.issue.reportedBy_username
+
+    $apiUrl = "$overseerrUrl/user?take=20&skip=0&sort=created"
+    $headers = @{
+        "accept" = "application/json"
+        "X-Api-Key" = $overseerrApiKey
+    }
+
+    $locale = "en"  # Default to English if the locale is not found
+
+    try {
+        # Step 1: Get the list of users
+        $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get
+        $users = $response.results
+
+        # Step 2: Find the user with the matching plexUsername
+        $user = $users | Where-Object { $_.plexUsername -eq $reportedByPlexUsername }
+
+        if ($user) {
+            Write-Host "User found: $($user.plexUsername)"
+            
+            # Step 3: Fetch detailed user information to get the locale
+            $userId = $user.id
+            $userDetailsApiUrl = "$overseerrUrl/user/$userId"
+
+            try {
+                $userDetailsResponse = Invoke-RestMethod -Uri $userDetailsApiUrl -Headers $headers -Method Get
+                
+                if ($userDetailsResponse.settings -and $userDetailsResponse.settings.locale) {
+                    $locale = $userDetailsResponse.settings.locale
+                    Write-Host "User's locale: $locale"
+                } else {
+                    Write-Host "Locale not found in user's settings, using default locale: en"
+                }
+            } catch {
+                Write-Host "Failed to fetch detailed user settings: $_"
+                Write-Host "Using default locale."
+            }
+        } else {
+            Write-Host "User not found, using default locale."
+        }
+    } catch {
+        Write-Host "Failed to fetch user details from Overseerr: $_"
+        Write-Host "Using default locale."
+    }
+
     $subject = $payload.subject
     $label = $payload.issue.reportedBy_username
     $issueType = $payload.issue.issue_type
@@ -22,9 +69,9 @@ function Handle-OtherIssue {
                 'X-Api-Key' = $overseerrApiKey
             }
             $movieDetails = Invoke-RestMethod -Uri $movieLookupUrl -Method Get -Headers $headers
-            $title = $movieDetails.title
+            $title = $movieDetails.originalTitle  # Use original title, not translated
             $releaseDate = $movieDetails.releaseDate
-            $year = $releaseDate.Split('-')[0] # Extract year from release date
+            $year = $releaseDate.Split('-')[0]  # Extract year from release date
         } catch {
             Write-Host "Error fetching movie details: $_"
             return
@@ -58,7 +105,7 @@ function Handle-OtherIssue {
                 Write-Host "No matching series found for tmdbId: $tmdbId or tvdbId: $tvdbId"
                 return
             }
-            $title = $matchedSeries.title
+            $title = $matchedSeries.title  # Use original title, not translated
             $year = $matchedSeries.year
             if ($matchedSeries.seriesType -eq "anime") {
                 $sectionId = $animeSectionId
@@ -145,7 +192,7 @@ function Handle-OtherIssue {
         Write-Host "Label added to media item: $($currentLabels -join ', ')"
         
         $message = "$subject is now available in your library"
-        Post-OverseerrComment -issueId $payload.issue.issue_id -message $message -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
+        Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "AddedToLibrary" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
     } catch {
         Write-Host "Error adding label to media item: $_"

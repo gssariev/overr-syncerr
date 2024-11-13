@@ -10,7 +10,7 @@ function Extract-Offset {
             return 120
         } elseif ($offsetValue -ge 121 -and $offsetValue -le 300) {
             return 300
-	    } elseif ($offsetValue -ge 301 -and $offsetValue -le 600) {
+        } elseif ($offsetValue -ge 301 -and $offsetValue -le 600) {
             return 600
         } else {
             return $offsetValue

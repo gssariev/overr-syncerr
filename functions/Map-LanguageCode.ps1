@@ -1,10 +1,13 @@
 function Map-LanguageCode {
-    param ([string]$issueMessage, [hashtable]$languageMap)
-    $lowercaseMessage = $issueMessage.ToLower()
-    foreach ($key in $languageMap.Keys) {
-        if ($lowercaseMessage.Contains($key)) {
-            return $languageMap[$key]
-        }
+    param (
+        [string]$languageCode,
+        [hashtable]$languageMap
+    )
+
+    if ($languageMap.ContainsKey($languageCode)) {
+        return $languageMap[$languageCode]
+    } else {
+        Write-Host "Language code '$languageCode' not found in the language map."
+        return $null  # Or return a default value like "Unknown"
     }
-    return 'English'
 }
