@@ -48,7 +48,7 @@ These instructions will help you set up and run Overr-Syncerr on your local mach
 ```yaml
 services:
   overr-syncerr:
-    image: gsariev/overr-syncerr:latest
+    image: gsariev/overr-syncerr:develop
     container_name: overr-syncerr
     ports:
       - "8089:8089"
