@@ -136,6 +136,7 @@ services:
       - M:\Movies:/mnt/movies
       - M:\TV:/mnt/tv
      ####### END OF GPT TRANSLATION
+      - /path/to/save/request/data:/app/data #Save user request data for use with Maintainerr
       
       restart: unless-stopped
 
