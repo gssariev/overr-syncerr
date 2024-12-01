@@ -79,6 +79,8 @@ services:
       ## Maintainerr Implementation
       MAINTAINERR_URL: "http://MAINTAINERR_URL:PORT"
       MAINTAINERR_API_KEY: "MAINTAINERR_API_KEY"
+      MONITOR_COLLECTIONS: true
+      COLLECTIONS_INTERVAL: 10    # How often the scan should run in seconds
       COLLECTION_IDS: 1,2         # Ids of collection to monitor
       UNWATCHED_LIMIT: 1          # Amount of unwatched media to trigger Overseerr request ovveride
       MOVIE_QUOTA_LIMIT: 1        # Movie quota limit
