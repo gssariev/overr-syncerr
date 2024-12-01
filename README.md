@@ -15,19 +15,15 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Current Features
 
-- **Full Sonarr and Radarr Integration**: Easily fetch series and movie details from Sonarr and Radarr.
-- **Bazarr Integration**: Synchronize subtitles using Bazarr, including support for 4K instances and HI subtitles.
-- **Language Mapping**: Map keywords to language names based on webhook messages.
-- **Audio Sync**: Uses the first audio track to sync subtitles.
-- **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr upon subtitles synchronization and mark it as resolved.
-- **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue in Overseerr.
-- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels (inspired by and works best in combination with [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections)). (Check the [Wiki](https://github.com/gssariev/overr-syncerr/wiki/4.-Adding-User-Label) on how to set it up)
-  
+- **Monitor Maintanerr collections** - specify which collection you'd like to monitor by specifying their collectionIds
+- **Custom Conditions** - specify the internval the Maintianerr logic should execute, the unwatched limit as well as the limits to apply for movies and series
+- **Override Overseerr Movie ans Series Request Limit**
+- **Reset Overseerr User Request Limit To Default**
   
 ## Future plans
 
-- **Wiki**: Updating the Wiki
-- **Subtitle Search**: allow users to send a 'search' requests for a specifc movie/series
+- **Testing & Feedback**
+  
 
 ## Known issues (WIP)
 
@@ -35,7 +31,11 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Getting Started
 
-These instructions will help you set up and run Overr-Syncerr on your local machine.
+These instructions will help you set up and run Overr-Syncerr on your local machine. To test the Maintanerr logic, the mandatory variables to configure are:
+- Overseerr
+- Plex
+- Maintainerr Logic
+- /path/to/save/request/data:/app/data 
 
 ### Prerequisites
 
@@ -142,10 +142,6 @@ services:
 
 ```
    
-4. **Run the Docker container using Docker Compose:**
-   Use Docker Compose to build and run the container.
-   ```sh
-   docker-compose up --build
 
 The container listens for webhooks on the port you've specified. Ensure Overseerr is configured to send webhook requests to the following endpoint: **http://your-ip-address:your-port/**
 
@@ -159,20 +155,6 @@ In your Overseerr instance go to:
 4. Test to see if the webhook notificaiton is sent
 5. Save Changes
 
-### Usage
-
-#### Subtitle sync
-1. In Overserr, navigate to the media that has unsynced subtitles
-2. Report a 'Subtitle' issue
-3. Mention the langauge of the subtitles (using the specific pre-mapped keywords), if the media is 4K and if the subtitles are HI or not, and if the media needs to be synced (using the specific pre-mapped sync keywords)
-4. Bazarr will start syncing the subtitles to the first audio track
-5. Upon completion, Overseerr will reply to the created subtitle issue and mark it as resolved
-
-#### Plex Label
-1. In Overseerr, navigate to the media that you want to add your label to
-2. Report a 'Other' issue type
-3. In the issue message, type: Add to library
-4. Once the label has been added, Overseerr will reply to the created issue mark it as resolved
 
 ## Found a bug?
 
