@@ -3,7 +3,7 @@ function Handle-MediaAvailable {
 	
 	 # Ensure Media Available handling is enabled
     if (-not $enableMediaAvailableHandling) {
-        Write-Host "Media Available handling is disabled."
+        Log-Message -Type "WRN" -Message "Media Available handling is disabled."
         return
     }
 	
@@ -13,11 +13,11 @@ function Handle-MediaAvailable {
     $tvdbId = $payload.media.tvdbId
     $plexUsername = $payload.request.requestedBy_username
 
-    Write-Host "Processing $mediaType request for Plex user: $plexUsername with TMDB ID: $tmdbId"
+    Log-Message -Type "INF" -Message "Processing $mediaType request for Plex user: $plexUsername with TMDB ID: $tmdbId"
 
     # Ensure that Plex host and token are set
     if (-not $plexHost -or -not $plexToken) {
-        Write-Host "Plex host or token not set. Cannot proceed."
+        Log-Message -Type "ERR" -Message "Plex host or token not set. Cannot proceed."
         return
     }
 
@@ -28,7 +28,7 @@ function Handle-MediaAvailable {
 
         # API call to get movie title and release date
         $movieLookupUrl = "$overseerrUrl/movie/$tmdbId"
-        Write-Host "Movie Lookup URL: $movieLookupUrl"
+        Log-Message -Type "INF" -Message "Movie Lookup URL: $movieLookupUrl"
         try {
             $headers = @{
                 'X-Api-Key' = $overseerrApiKey
@@ -38,7 +38,7 @@ function Handle-MediaAvailable {
             $releaseDate = $movieDetails.releaseDate
             $year = $releaseDate.Split('-')[0]  # Extract year from release date
         } catch {
-            Write-Host "Error fetching movie details: $_"
+            Log-Message -Type "ERR" -Message"Error fetching movie details: $_"
             return
         }
     }
@@ -51,12 +51,12 @@ function Handle-MediaAvailable {
         # API call to check seriesType and get series title and year
         if ($null -ne $tmdbId) {
             $seriesLookupUrl = "$overseerrUrl/service/sonarr/lookup/$tmdbId"
-            Write-Host "Series Lookup URL (TMDB): $seriesLookupUrl"
+            Log-Message -Type "INF" -Message "Series Lookup URL (TMDB): $seriesLookupUrl"
         } elseif ($null -ne $tvdbId) {
             $seriesLookupUrl = "$overseerrUrl/service/sonarr/lookup/$tvdbId?type=tvdb"
-            Write-Host "Series Lookup URL (TVDB): $seriesLookupUrl"
+            Log-Message -Type "INF" -Message "Series Lookup URL (TVDB): $seriesLookupUrl"
         } else {
-            Write-Host "Both TMDB ID and TVDB ID are missing."
+            Log-Message -Type "ERR" -Message "Both TMDB ID and TVDB ID are missing."
             return
         }
 
@@ -67,7 +67,7 @@ function Handle-MediaAvailable {
             $seriesDetails = Invoke-RestMethod -Uri $seriesLookupUrl -Method Get -Headers $headers
             $matchedSeries = $seriesDetails | Where-Object { $_.tmdbId -eq $tmdbId -or $_.tvdbId -eq $tvdbId }
             if ($null -eq $matchedSeries) {
-                Write-Host "No matching series found for tmdbId: $tmdbId or tvdbId: $tvdbId"
+                Log-Message -Type "ERR" -Message "No matching series found for tmdbId: $tmdbId or tvdbId: $tvdbId"
                 return
             }
             $title = $matchedSeries.title
@@ -76,24 +76,24 @@ function Handle-MediaAvailable {
                 $sectionId = $animeSectionId
             }
         } catch {
-            Write-Host "Error fetching series details: $_"
+            Log-Message -Type "ERR" -Message "Error fetching series details: $_"
             return
         }
     } else {
-        Write-Host "Unsupported media type: $mediaType"
+        Log-Message -Type "ERR" -Message "Unsupported media type: $mediaType"
         return
     }
 
-    Write-Host "Extracted Title: $title"
-    Write-Host "Extracted Year: $year"
+    Log-Message -Type "SUC" -Message "Extracted Title: $title"
+    Log-Message -Type "SUC" -Message "Extracted Year: $year"
 
     # Search for the media item in Plex using the title and year
     $searchUrl = "$plexHost/library/sections/$sectionId/all?type=$mediaTypeForSearch&title=" + [System.Uri]::EscapeDataString($title) + "&year=$year&X-Plex-Token=$plexToken"
-    Write-Host "Search URL: $searchUrl"
+   
     try {
         $mediaItems = Invoke-RestMethod -Uri $searchUrl -Method Get -ContentType "application/xml"
     } catch {
-        Write-Host "Error contacting Plex server: $_"
+        Log-Message -Type "ERR" -Message "Error contacting Plex server: $_"
         return
     }
 
@@ -104,18 +104,23 @@ function Handle-MediaAvailable {
             $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.title -eq $title -and $_.year -eq $year }
         }
     } catch {
-        Write-Host "Error parsing Plex server response: $_"
+        Log-Message -Type "ERR" -Message "Error parsing Plex server response: $_"
         return
     }
 
     if ($null -eq $mediaItem) {
-        Write-Host "Media item not found after filtering."
+        Log-Message -Type "ERR" -Message "Media item not found after filtering."
         return
     }
 
     $ratingKey = $mediaItem.ratingKey
-    Write-Host "Extracted Rating Key: $ratingKey"
+    Log-Message -Type "SUC" -Message "Extracted Rating Key: $ratingKey"
 
     # Call Add-TagToMedia with the appropriate parameters
     Add-TagToMedia -newTag $plexUsername
+	
+	# Set the preferred audio track for the user
+    if ($enableAudioPref){
+	Set-AudioTrack -ratingKey $ratingKey -plexUsername $plexUsername
+	}
 }
