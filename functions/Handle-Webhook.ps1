@@ -9,6 +9,9 @@ function Handle-Webhook {
     # Check for MEDIA_AVAILABLE notification type
     if ($payload.notification_type -eq "MEDIA_AVAILABLE") {
         Handle-MediaAvailable -payload $payload
+		if ($enableKometa){
+		Trigger-Kometa
+		}
     } elseif ($payload.issue.issue_type -eq "SUBTITLES") {
         Handle-SubtitlesIssue -payload $payload
     } elseif ($payload.issue.issue_type -eq "OTHER") {
@@ -27,9 +30,9 @@ function Handle-Webhook {
         if ($matchFound) {
             Handle-OtherIssue -payload $payload
         } else {
-            Write-Host "Received issue is not handled."
+            Log-Message -Type "WRN" -Message "Received issue is not handled."
         }
     } else {
-        Write-Host "Received issue is not handled."
+        Log-Message -Type "WRN" -Message "Received issue is not handled."
     }
 }
