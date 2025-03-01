@@ -37,6 +37,8 @@ $enableMediaAvailableHandling = $env:ENABLE_MEDIA_AVAILABLE_HANDLING -eq "true"
 $queue = [System.Collections.Queue]::new()
 $openAiApiKey = $env:OPEN_AI_API_KEY
 $useGPT = $env:ENABLE_GPT -eq "true"
+$enableKometa = $env:ENABLE_KOMETA -eq "true"
+$enableAudioPref = $env:ENABLE_AUDIO_PREF -eq "true"
 $modelGPT = $env:MODEL_GPT
 $maxTokens = [int]$env:MAX_TOKENS
 
@@ -45,12 +47,19 @@ $languageMapJson = $env:LANGUAGE_MAP
 $syncKeywordsJson = $env:SYNC_KEYWORDS
 
 # Call function at script startup
+if ($enableAudioPref){
 Log-Message -Type "INF" -Message "Fetching Plex user tokens..."
 Get-PlexUserTokens -plexToken $plexToken -plexClientId $plexClientId
-
+} else {
+    Log-Message -Type "WRN" -Message "Fetcing Plex user tokens is DISABLED."
+}
 # Call function at script startup to ensure the file exists
+if ($enableAudioPref){
 Log-Message -Type "INF" -Message "Generating user audio preferences..."
 Generate-UserAudioPreferences
+} else {
+    Log-Message -Type "WRN" -Message "Audio Preference generation is DISABLED."
+}
 
 try {
     $languageMapPSObject = ConvertFrom-Json -InputObject $languageMapJson
@@ -105,6 +114,18 @@ if ($useGPT) {
     Log-Message -Type "INF" -Message "GPT is used for subtitle translation."
 } else {
     Log-Message -Type "INF" -Message "Bazarr (Google API) is used for subtitle translation."
+}
+
+if ($enableKometa){
+    Log-Message -Type "INF" -Message "Kometa is ENABLED."
+} else {
+    Log-Message -Type "WRN" -Message "Kometa is DISABLED."
+}
+
+if ($enableAudioPref){
+    Log-Message -Type "INF" -Message "Audio preference is ENABLED."
+} else {
+    Log-Message -Type "WRN" -Message "Audio preference is DISABLED."
 }
 
 # HTTP listener
