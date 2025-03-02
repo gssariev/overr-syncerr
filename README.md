@@ -1,5 +1,8 @@
 # Overr-Syncerr
 
+This project was created to improve my Plex experience—and that of my users—by giving them just enough control to solve one of the biggest challenges: subtitles. Over time, it has expanded to include features like automatic media labeling, better translations, and, most recently, personalized audio preferences. Now, users can have their preferred language, codec, and channel count automatically selected, ensuring the best audio experience while reducing unnecessary transcoding.
+While this project is designed around my setup, you're welcome to adapt it to fit your own needs!
+
 Overr-Syncerr is a script designed to automate the management of subtitle synchronization issues across your media library. By leveraging **[Overseerr](https://overseerr.dev)** and **[Jellyseerr](https://github.com/Fallenbagel/jellyseerr)**'s built-in webhook and issue reporting functionality, this script allows users to specify the subtitles they need synchronized. It seamlessly integrates with your existing services such as **[Sonarr](https://sonarr.tv/)**, **[Radarr](https://radarr.video/)**, and **[Bazarr](https://www.bazarr.media)**, making the entire process of subtitle synchronization more automated.
 
 <p align="center" >
@@ -24,19 +27,13 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 - **Subtitles**: Send 'sync', 'translate' and manual adjustment requests to Bazarr (using the 1st audio track + GSS).
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr/Jellyseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue.
-
-## Addititonal Features
-- **Add User Label**: Create a personalised experience for your users by letting them see the media they want to see using labels.
+- **User Audio Preference:** set preffered audio track based on language, codec and channel per user automatically once media becomes available
 - **Auto-labelling**: Option to label available requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))
 - **Translate Subs Using GPT**: Option to use OpenAI GPT instead of Google Translate for subtitle translation **OpenAI API Key Required**
 
 ## Known issues (WIP)
 
 - **Discussions:** if discover any bugs or have a suggestion on how to improve the project, feel free to create a discussion or post an issue :)
-
-### Want to help?
-- Looking for someone who can make a Unraid template
-- Help with translations/localisation
 
 ## Contributors
 
