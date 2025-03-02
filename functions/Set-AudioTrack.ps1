@@ -31,15 +31,67 @@ function Set-AudioTrack {
         return
     }
 
-    # Validate metadata structure
-    if (-not $metadata.MediaContainer.Video) {
-        Log-Message -Type "ERR" -Message "No video metadata found for ratingKey: $ratingKey"
+    # Determine if this is a TV Show
+    $isShow = $false
+    if ($metadata.MediaContainer.Directory.type -eq "show") {
+        $isShow = $true
+        Log-Message -Type "INF" -Message "Detected TV Show: $($metadata.MediaContainer.Directory.title)"
+        
+        # Fetch seasons
+        $seasonsUrl = "$plexHost/library/metadata/$ratingKey/children"+"?X-Plex-Token=$plexToken"
+        try {
+            $seasonsMetadata = Invoke-RestMethod -Uri $seasonsUrl -Method Get -ContentType "application/xml"
+        } catch {
+            Log-Message -Type "ERR" -Message "Error retrieving seasons. Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
+            return
+        }
+
+        # Loop through seasons
+        foreach ($season in $seasonsMetadata.MediaContainer.Directory) {
+            $seasonKey = $season.ratingKey
+            Log-Message -Type "INF" -Message "Processing Season: $($season.title) (RatingKey: $seasonKey)"
+            
+            # Fetch episodes for the season
+            $episodesUrl = "$plexHost/library/metadata/$seasonKey/children"+"?X-Plex-Token=$plexToken"
+            try {
+                $episodesMetadata = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
+            } catch {
+                Log-Message -Type "ERR" -Message "Error retrieving episodes for Season $($season.index). Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
+                continue
+            }
+
+            # Loop through episodes
+            foreach ($episode in $episodesMetadata.MediaContainer.Video) {
+                Log-Message -Type "INF" -Message "Processing Episode: $($episode.title) (S$($episode.parentIndex)E$($episode.index))"
+                Process-MediaItem -ratingKey $episode.ratingKey -userTokens $userTokens -userAudioPreferences $userAudioPreferences
+            }
+        }
+        return
+    }
+
+    # If not a show, process it as a single media item
+    Process-MediaItem -ratingKey $ratingKey -userTokens $userTokens -userAudioPreferences $userAudioPreferences
+}
+
+function Process-MediaItem {
+    param (
+        [string]$ratingKey,
+        [PSCustomObject]$userTokens,
+        [PSCustomObject]$userAudioPreferences
+    )
+
+    # Fetch media metadata
+    $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
+    try {
+        $metadata = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
+    } catch {
+        Log-Message -Type "ERR" -Message "Error retrieving metadata for media item $ratingKey. Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
         return
     }
 
     $video = $metadata.MediaContainer.Video
     if ($video -is [System.Array]) { $video = $video[0] }
-    
+
     if (-not $video.Media) {
         Log-Message -Type "ERR" -Message "No media information found for ratingKey: $ratingKey"
         return
@@ -81,63 +133,51 @@ function Set-AudioTrack {
         $userPreferences = $userAudioPreferences.$plexUsername.preferred
         Log-Message -Type "INF" -Message "User '$plexUsername' prefers: $($userPreferences | ForEach-Object { "$($_.language) ($($_.codec) $($_.channels))" })"
 
-        # Check if we've already selected an optimal track for this media
-        if ($selectedTracksCache.ContainsKey($plexUsername)) {
-            $selectedTrack = $selectedTracksCache[$plexUsername]
-        } else {
-            $selectedTrack = $null
+        $selectedTrack = $null
 
-            # Step 1: Exact Match (Language, Codec, Channels)
+        # Step 1: Exact Match (Language, Codec, Channels)
+        foreach ($pref in $userPreferences) {
+            $selectedTrack = $audioTracks | Where-Object {
+                $_.languageTag -eq $pref.language -and $_.codec -eq $pref.codec -and $_.channels -eq $pref.channels
+            }
+            if ($selectedTrack) { break }
+        }
+
+        # Step 2: If no exact match, match language only
+        if (-not $selectedTrack) {
             foreach ($pref in $userPreferences) {
                 $selectedTrack = $audioTracks | Where-Object {
-                    $_.languageTag -eq $pref.language -and $_.codec -eq $pref.codec -and $_.channels -eq $pref.channels
-                }
+                    $_.languageTag -eq $pref.language
+                } | Select-Object -First 1
                 if ($selectedTrack) { break }
             }
+        }
 
-            # Step 2: If no exact match, match language only
-            if (-not $selectedTrack) {
-                foreach ($pref in $userPreferences) {
-                    $selectedTrack = $audioTracks | Where-Object {
-                        $_.languageTag -eq $pref.language
-                    } | Select-Object -First 1
-                    if ($selectedTrack) { break }
-                }
+        # Step 3: Match by Channel Count if Language Not Found
+        if (-not $selectedTrack) {
+            foreach ($pref in $userPreferences) {
+                $selectedTrack = $audioTracks | Where-Object {
+                    $_.channels -eq $pref.channels
+                } | Select-Object -First 1
+                if ($selectedTrack) { break }
             }
+        }
 
-            # Step 3: Match by Channel Count if Language Not Found
-            if (-not $selectedTrack) {
-                foreach ($pref in $userPreferences) {
-                    $selectedTrack = $audioTracks | Where-Object {
-                        $_.channels -eq $pref.channels
-                    } | Select-Object -First 1
-                    if ($selectedTrack) { break }
-                }
-            }
+        # Step 4: Use default track if still no match
+        if (-not $selectedTrack -and $defaultTrack) {
+            $selectedTrack = $defaultTrack
+        }
 
-            # Step 4: Use default track if still no match
-            if (-not $selectedTrack -and $defaultTrack) {
-                Log-Message -Type "WRN" -Message "No preferred track found for '$plexUsername'. Falling back to default track: $($defaultTrack.extendedDisplayTitle)"
-                $selectedTrack = $defaultTrack
-            }
-
-            if (-not $selectedTrack) {
-                Log-Message -Type "WRN" -Message "No suitable track found for user '$plexUsername'. Skipping."
-                continue
-            }
-
-            # Cache the selected track to avoid redundant searches
-            $selectedTracksCache[$plexUsername] = $selectedTrack
+        if (-not $selectedTrack) {
+            Log-Message -Type "WRN" -Message "No suitable track found for user '$plexUsername'. Skipping."
+            continue
         }
 
         $audioStreamId = $selectedTrack.id
-        Log-Message -Type "INF" -Message "Setting audio track: $($selectedTrack.extendedDisplayTitle) (ID: $audioStreamId) for user: $plexUsername"
-
-        # Apply the preferred audio track
         $updateUrl = "$plexHost/library/parts/$partId"+"?X-Plex-Token=$userToken&audioStreamID=$audioStreamId"
         try {
             Invoke-RestMethod -Uri $updateUrl -Method Put
-            Log-Message -Type "SUC" -Message "Successfully set audio track for user '$plexUsername'."
+         Log-Message -Type "SUC" -Message "Successfully set audio track for user '$plexUsername': $($selectedTrack.extendedDisplayTitle)"
         } catch {
             Log-Message -Type "ERR" -Message "Error setting audio track for user '$plexUsername'. Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
         }
