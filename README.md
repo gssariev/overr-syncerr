@@ -35,6 +35,10 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 - **Discussions:** if discover any bugs or have a suggestion on how to improve the project, feel free to create a discussion or post an issue :)
 
+## To-Do
+
+- **Multiple Libraries Support:** add support for multiple movie and tv libraries 
+
 ## Contributors
 
 Big thank you to the people helping furher develop this project!
