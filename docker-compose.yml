@@ -5,68 +5,70 @@ services:
     ports:
       - "8089:8089"
     environment:
-    
+      #BAZARR CONFIG
       BAZARR_API_KEY: "YOUR_BAZARR_API_KEY"
-      BAZARR_URL: "http://BAZARR_IP:BAZARR_PORT/api"
-      
-      RADARR_API_KEY: "YOUR_RADARR_API_KEY"
-      RADARR_URL: "http://RADARR_IP:RADARR_PORT/api/v3"
-      
-      SONARR_API_KEY: "YOUR_SONARR_API_KEY"
-      SONARR_URL: "http://SONARR_IP:SONARR_PORT/api/v3"
+      BAZARR_URL: "http://BAZARR_URL:PORT/api"
       
       BAZARR_4K_API_KEY: "YOUR_BAZARR_4K_API_KEY"
-      BAZARR_4K_URL: "http://BAZARR_4K_IP:BAZARR_4K_PORT/api"
+      BAZARR_4K_URL: "http://BAZARR_4K_URL:PORT/api"
+
+      #RADARR CONFIG
+      RADARR_API_KEY: "YOUR_RADARR_API_KEY"
+      RADARR_URL: "http://RADARR_URL:PORT/api/v3"
       
       RADARR_4K_API_KEY: "YOUR_RADARR_4K_API_KEY"
-      RADARR_4K_URL: "http://RADARR_4K_IP:RADARR_4K_PORT/api/v3"
+      RADARR_4K_URL: "http://RADARR_4K_URL:PORT/api/v3"
       
-      SONARR_4K_API_KEY: "YOUR_SONARR_4K_API_KEY"
-      SONARR_4K_URL: "http://SONARR_4K_IP:SONARR_4K_PORT/api/v3"
+      #SONARR CONFIG
+      SONARR_API_KEY: "YOUR_SONARR_API_KEY"
+      SONARR_URL: "http://SONARR_URL:PORT/api/v3"
 
-      OVERSEERR_API_KEY: "YOUR_OVERSEERR_API"
-      OVERSEERR_URL: "http://YOUR_OVERSEERR_URL:OVERSEERR_PORT/api/v1"
+      SONARR_4K_API_KEY: "SONARR_4K_API_KEY"
+      SONARR_4K_URL: "http://SONARR_4K_URL:PORT/api/v3"
+      
+      #OVERSEERR or JELLYSEERR CONFIG
+      OVERSEERR_API_KEY: "OVERRSEERR_OR_JELLYSEERR_API_KEY"
+      OVERSEERR_URL: "http://OVERRSEERR_OR_JELLYSEERR_URL:PORT/api/v1"
 
+      #PLEX CONFIG
       PLEX_TOKEN: "YOUR_PLEX_TOKEN"
-      PLEX_HOST: "http://YOUR_PLEX_SERVER_URL:PLEX_SERVER_PORT"
+      PLEX_HOST: "http://PLEX_SERVER_URL:PORT"
+      ANIME_LIBRARY_NAME: "YOUR_ANIME_LIBRARY_NAME"
+      MOVIES_LIBRARY_NAME: "YOUR_MOVIE_LIBRARY_NAME"
+      SERIES_LIBRARY_NAME: "YOUR_TV_LIBRARY_NAME"
+      SERVER_CLIENTID: "YOUR_PLEX_SERVER_CLIENT_ID"
 
-      #Library names for getting library IDs and adding user-label to media. Example below:
-      ANIME_LIBRARY_NAME: "Anime"
-      MOVIES_LIBRARY_NAME: "Movies"
-      SERIES_LIBRARY_NAME: "Series"
+      #GPT CONFIG
+      #Replace the gpt model with the one you wish. 
+      #Bytesize, tokens, chuncks and delays can be left as is.
+      ENABLE_GPT: "true"
+      MODEL_GPT: "gpt-4o"
+      OPEN_AI_API_KEY: "YOUR_OPEN_AI_KEY"
+      MAX_REQUEST_BYTES: 2000 
+      MAX_TOKENS: 4000
+      CHUNK_OVERLAP: 2
+      REQUEST_DELAY: 2
+      
+      #Provide the locations Bazarr stores subtitles to use with GPT; else, leave empty
+      MOVIE_PATH_MAPPING: "M:\\Movies\\1080p" #Bazarr subtitles path for GPT translation
+      TV_PATH_MAPPING: "M:\\TV\\1080p" #Bazarr subtitles path for GPT translation
+      
+      #ADDITONAL OPTIONS CONFIG
+      ENABLE_KOMETA: "true"
+      KOMETA_CONFIG_PATH: CONFIG_PATH_TO_KOMETA
+      ENABLE_MEDIA_AVAILABLE_HANDLING: "true" #Enable if you want to use auto-label, kometa overlays or audio preference
+      ENABLE_AUDIO_PREF: "true" #Enable if you want to use user specific audio preference
+      MONITOR_REQUESTS: "false" #Enable if you want to add label or set audio to media that's partially available 
+      CHECK_REQUEST_INTERVAL: 10 #Set the desired interval for monitor request to execute (in seconds)
+      PORT: 8089 #Webhook port
+      LANGUAGE_MAP: "{\"da\":\"Danish\",\"en\":\"English\",\"bg\":\"Bulgarian\",\"dansk\":\"Danish\",\"english\":\"English\",\"danske\":\"Danish\",\"eng\":\"English\"}" #Replace with your own keywords
+      SYNC_KEYWORDS: "[\"sync\", \"out of sync\", \"messed up\", \"synchronization\"]" #Replace with your own keywords
+      ADD_LABEL_KEYWORDS: "[\"add to library\", \"jeg vil se\", \"tilføj til bibliotek\", \"tilføj\"]" #Replace with your own keywords 
 
-      #Optional auto-labeling of requested media in Plex using requester username
-      #Default is set to 'false'
-      ENABLE_MEDIA_AVAILABLE_HANDLING: false
-      
-      PORT: 8089
-      
-      #Map specific keywords to your subtitle languages. Examples below:
-      LANGUAGE_MAP: '{"da":"Danish",
-      "en":"English",
-      "bg":"Bulgarian",
-      "dansk":"Danish",
-      "english":"English",
-      "danske":"Danish",
-      "eng":"English"}'
-
-      SYNC_KEYWORDS: '["sync", "out of sync", "messed up", "synchronization"]' # Replace with your actual sync keywords
-
-      ####### GPT TRANSLATION - IGNORE IF NOT USING
-      ENABLE_GPT: false
-      MODEL_GPT: "gpt-4o" # Use your preffered model
-      OPEN_AI_API_KEY: "YOU_OPENAI_API_KEY"
-      MAX_REQUEST_BYTES: 2000 # The amount of information send with each requests.
-      MAX_TOKENS: 4000 # Max tokens for the chosel GPT model
-      CHUNK_OVERLAP: 2  # Overlap of one subtitle line between chunks
-      REQUEST_DELAY: 2 # Delay between server requests in seconds
-      
-      MOVIE_PATH_MAPPING: M:\Movies # Map to match the Bazarr path to your movies
-      TV_PATH_MAPPING: M:\TV # Map to match the Bazarr path to your series 
-      
     volumes:
-      - M:\Movies:/mnt/movies
-      - M:\TV:/mnt/tv
-     ####### END OF GPT TRANSLATION
+      - M:\Movies\1080p:/mnt/movies
+      - M:\TV\1080p:/mnt/tv
+      - path/to/config:/mnt/usr #Storing user tokens and prefered audio
+      - /var/run/docker.sock:/var/run/docker.sock #To trigger Kometa container
       
-      restart: unless-stopped
+    restart: unless-stopped
