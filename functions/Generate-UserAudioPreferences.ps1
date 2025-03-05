@@ -8,7 +8,7 @@ function Generate-UserAudioPreferences {
     }
 
     try {
-        $userTokens = Get-Content -Path $tokenFile | ConvertFrom-Json
+        $userTokens = Get-Content -Path $tokenFile | ConvertFrom-Json -AsHashtable
     } catch {
         Log-Message -Type "ERR" -Message "Error reading user token file: $_"
         return
@@ -19,33 +19,43 @@ function Generate-UserAudioPreferences {
     # If audio preference file exists, load existing preferences
     if (Test-Path $audioPrefFile) {
         try {
-            $defaultPreferences = Get-Content -Path $audioPrefFile | ConvertFrom-Json
+            $existingPreferences = Get-Content -Path $audioPrefFile | ConvertFrom-Json -AsHashtable
+            if ($existingPreferences -is [hashtable]) {
+                $defaultPreferences = $existingPreferences
+            }
         } catch {
             Log-Message -Type "ERR" -Message "Error reading audio preference file, resetting..."
             $defaultPreferences = @{}
         }
     }
 
-    # Ensure each user has an entry in user_audio_pref.json
-    foreach ($user in $userTokens.PSObject.Properties) {
-        $plexUsername = $user.Name
+    # Compare number of usernames in user_tokens.json and user_audio_pref.json
+    $userTokenCount = $userTokens.Keys.Count
+    $audioPrefCount = $defaultPreferences.Keys.Count
 
-        if (-not $defaultPreferences.PSObject.Properties[$plexUsername]) {
-            # Assign a default preference with prioritized list
-            $defaultPreferences[$plexUsername] = @{
-                "preferred" = @(
-                    @{ "language" = "English"; "codec" = "EAC3"; "channels" = 6 },
-                    @{ "language" = "English"; "codec" = "AAC"; "channels" = 2 }
-                )
-                "fallback" = @{
-                    "matchChannels" = $true
+    if ($userTokenCount -ne $audioPrefCount) {
+        foreach ($user in $userTokens.Keys) {
+            $plexUsername = $user
+
+            if (-not $defaultPreferences.ContainsKey($plexUsername)) {
+                # Assign a default preference with prioritized list
+                $defaultPreferences[$plexUsername] = @{
+                    "preferred" = @(
+                        @{ "language" = "English"; "codec" = "EAC3"; "channels" = 6 },
+                        @{ "language" = "English"; "codec" = "AAC"; "channels" = 2 }
+                    )
+                    "fallback" = @{
+                        "matchChannels" = $true
+                    }
                 }
+                Log-Message -Type "INF" -Message "Added default audio preference for user: $plexUsername"
             }
-            Log-Message -Type "INF" -Message "Added default audio preference for user: $plexUsername"
         }
-    }
 
-    # Save updated preferences
-    $defaultPreferences | ConvertTo-Json -Depth 10 | Set-Content -Path $audioPrefFile
-    Log-Message -Type "SUC" -Message "User audio preferences saved to $audioPrefFile"
+        # Save updated preferences
+        $defaultPreferences | ConvertTo-Json -Depth 10 | Set-Content -Path $audioPrefFile
+        Log-Message -Type "SUC" -Message "User audio preferences updated and saved to $audioPrefFile"
+    } else {
+        Log-Message -Type "INF" -Message "User audio preferences are up to date. No changes needed."
+    }
 }
