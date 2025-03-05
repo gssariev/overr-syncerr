@@ -29,9 +29,9 @@ $plexClientId = $env:SERVER_CLIENTID
 $kometaConfig = $env:KOMETA_CONFIG_PATH
 $plexToken = $env:PLEX_TOKEN
 $plexHost = $env:PLEX_HOST
-$animeLibraryName = $env:ANIME_LIBRARY_NAME
-$moviesLibraryName = $env:MOVIES_LIBRARY_NAME
-$seriesLibraryName = $env:SERIES_LIBRARY_NAME
+$animeLibraryNames = $env:ANIME_LIBRARY_NAME -split ","
+$moviesLibraryNames = $env:MOVIES_LIBRARY_NAME -split ","
+$seriesLibraryNames = $env:SERIES_LIBRARY_NAME -split ","
 $port = $env:PORT
 $enableMediaAvailableHandling = $env:ENABLE_MEDIA_AVAILABLE_HANDLING -eq "true"
 $queue = [System.Collections.Queue]::new()
@@ -81,17 +81,25 @@ try {
     Log-Message -Type "ERR" -Message "Error parsing sync keywords: $_"
 }
 
-# Fetch Plex Library IDs
-$libraryNames = @($animeLibraryName, $moviesLibraryName, $seriesLibraryName)
-$libraryIds = Get-PlexLibraryIds -plexHost $plexHost -plexToken $plexToken -libraryNames $libraryNames
+# Organize by type (Movies, TV, Anime)
+$libraryCategories = @{
+    "Movies" = $moviesLibraryNames
+    "TV" = $seriesLibraryNames
+    "Anime" = $animeLibraryNames
+}
 
-$animeSectionId = $libraryIds[$animeLibraryName]
-$moviesSectionId = $libraryIds[$moviesLibraryName]
-$seriesSectionId = $libraryIds[$seriesLibraryName]
+# Fetch library IDs
+$libraryIds = Get-PlexLibraryIds -plexHost $plexHost -plexToken $plexToken -libraryCategories $libraryCategories
 
-Log-Message -Type "SUC" -Message "Anime Section ID: $animeSectionId"
-Log-Message -Type "SUC" -Message "Movies Section ID: $moviesSectionId"
-Log-Message -Type "SUC" -Message "Series Section ID: $seriesSectionId"
+# Assign section IDs correctly
+$moviesSectionIds = $libraryIds["Movies"]
+$seriesSectionIds = $libraryIds["TV"]
+$animeSectionIds = $libraryIds["Anime"]
+
+Log-Message -Type "SUC" -Message "Movies Section IDs: $moviesSectionIds"
+Log-Message -Type "SUC" -Message "Series Section IDs: $seriesSectionIds"
+Log-Message -Type "SUC" -Message "Anime Section IDs: $animeSectionIds"
+
 
 # Check if the environment variable MONITOR_REQUESTS is set to true
 $monitorRequests = $env:MONITOR_REQUESTS -eq "true"
