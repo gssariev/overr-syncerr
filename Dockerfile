@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:7.1.3-ubuntu-20.04
+FROM mcr.microsoft.com/powershell:latest
 
 RUN apt update && apt install -y docker.io
 
