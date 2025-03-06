@@ -37,7 +37,7 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 ## To-Do
 
-- **Multiple Libraries Support:** add support for multiple movie and tv libraries 
+- **Multiple Libraries Support:** add support for multiple movie and tv libraries ✅
 
 ## Contributors
 
