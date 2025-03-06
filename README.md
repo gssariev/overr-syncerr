@@ -39,6 +39,7 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 - **Multiple Libraries Support:** add support for multiple movie and tv libraries ✅
 - **Fetch All Requests:** fetch all requests from Overseerr/Jellyseerr, set audio track and add label
+- **Unraid template**
 
 ## Contributors
 
