@@ -41,7 +41,10 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 - **Fetch All Requests:** fetch all requests from Overseerr/Jellyseerr, set audio track and add label 🛠️
 - **Unraid template**
 - **Better Documentation:** make the documentation more concise
-
+- **Set Preferred Subtitles:**
+  - Create subtitles preference ✅
+  - Apply subtitle preferences upon media availability ✅ - forced subs are WIP ⚠️
+  - Apply subtitle preferences on all media (new and old) 🛠️
 ## Contributors
 
 Big thank you to the people helping furher develop this project!
