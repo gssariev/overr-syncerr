@@ -43,7 +43,7 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 - **Better Documentation:** make the documentation more concise
 - **Set Preferred Subtitles:**
   - Create subtitles preference ✅
-  - Apply subtitle preferences upon media availability ✅ - forced subs are WIP ⚠️
+  - Apply subtitle preferences upon media availability - succesffuly set forced/non-forced subs for users ✅
   - Apply subtitle preferences on all media (new and old) 🛠️
 ## Contributors
 
