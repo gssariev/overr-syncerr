@@ -33,7 +33,7 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
 ## Known issues (WIP)
 
-- **Discussions:** if discover any bugs or have a suggestion on how to improve the project, feel free to create a discussion or post an issue :)
+- **Preffered Audio Track:** preffered language get incorrectly assigned in media with mutli-language tracks - fixed in upcoming release ✅
 
 ## To-Do
 
