@@ -41,8 +41,8 @@ function Generate-UserAudioPreferences {
                 # Assign a default preference with prioritized list
                 $defaultPreferences[$plexUsername] = @{
                     "preferred" = @(
-                        @{ "language" = "English"; "codec" = "EAC3"; "channels" = 6 },
-                        @{ "language" = "English"; "codec" = "AAC"; "channels" = 2 }
+                        @{ "languageCode" = "eng"; "codec" = "EAC3"; "channels" = 6 },
+                        @{ "languageCode" = "eng"; "codec" = "AAC"; "channels" = 2 }
                     )
                     "fallback" = @{
                         "matchChannels" = $true
