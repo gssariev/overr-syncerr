@@ -1,7 +1,7 @@
 function Handle-MediaAvailable {
     param ([psobject]$payload)
 	
-	 # Ensure Media Available handling is enabled
+    # Ensure Media Available handling is enabled
     if (-not $enableMediaAvailableHandling) {
         Log-Message -Type "WRN" -Message "Media Available handling is disabled."
         return
@@ -23,7 +23,7 @@ function Handle-MediaAvailable {
 
     # Handling movies
     if ($mediaType -eq "movie") {
-        $sectionId = $moviesSectionId
+        $sectionIds = $moviesSectionIds
         $mediaTypeForSearch = "1"  # Movie type for Plex API
 
         # API call to get movie title and release date
@@ -38,14 +38,14 @@ function Handle-MediaAvailable {
             $releaseDate = $movieDetails.releaseDate
             $year = $releaseDate.Split('-')[0]  # Extract year from release date
         } catch {
-            Log-Message -Type "ERR" -Message"Error fetching movie details: $_"
+            Log-Message -Type "ERR" -Message "Error fetching movie details: $_"
             return
         }
     }
 
     # Handling TV shows (including anime)
     elseif ($mediaType -eq "tv") {
-        $sectionId = $seriesSectionId
+        $sectionIds = $seriesSectionIds
         $mediaTypeForSearch = "2"  # TV type for Plex API
 
         # API call to check seriesType and get series title and year
@@ -73,7 +73,7 @@ function Handle-MediaAvailable {
             $title = $matchedSeries.title
             $year = $matchedSeries.year
             if ($matchedSeries.seriesType -eq "anime") {
-                $sectionId = $animeSectionId
+                $sectionIds = $animeSectionIds
             }
         } catch {
             Log-Message -Type "ERR" -Message "Error fetching series details: $_"
@@ -87,40 +87,52 @@ function Handle-MediaAvailable {
     Log-Message -Type "SUC" -Message "Extracted Title: $title"
     Log-Message -Type "SUC" -Message "Extracted Year: $year"
 
-    # Search for the media item in Plex using the title and year
-    $searchUrl = "$plexHost/library/sections/$sectionId/all?type=$mediaTypeForSearch&title=" + [System.Uri]::EscapeDataString($title) + "&year=$year&X-Plex-Token=$plexToken"
-   
-    try {
-        $mediaItems = Invoke-RestMethod -Uri $searchUrl -Method Get -ContentType "application/xml"
-    } catch {
-        Log-Message -Type "ERR" -Message "Error contacting Plex server: $_"
-        return
-    }
+    # Search for the media item in Plex using the title and year across multiple section IDs
+    $mediaItem = $null
+    foreach ($sectionId in $sectionIds) {
+        $searchUrl = "$plexHost/library/sections/$sectionId/all?type=$mediaTypeForSearch&title=" + [System.Uri]::EscapeDataString($title) + "&year=$year&X-Plex-Token=$plexToken"
+        
+        try {
+            $mediaItems = Invoke-RestMethod -Uri $searchUrl -Method Get -ContentType "application/xml"
 
-    try {
-        if ($mediaType -eq "movie") {
-            $mediaItem = $mediaItems.MediaContainer.Video | Where-Object { $_.title -eq $title -and $_.year -eq $year }
-        } elseif ($mediaType -eq "tv") {
-            $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.title -eq $title -and $_.year -eq $year }
+            if ($mediaType -eq "movie") {
+                $mediaItem = $mediaItems.MediaContainer.Video | Where-Object { $_.title -eq $title -and $_.year -eq $year }
+            } elseif ($mediaType -eq "tv") {
+                $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.title -eq $title -and $_.year -eq $year }
+            }
+
+            if ($mediaItem) {
+                break  # Stop searching once we find the media
+            }
+        } catch {
+            Log-Message -Type "ERR" -Message "Error contacting Plex server for section ID ${sectionId}: $_"
         }
-    } catch {
-        Log-Message -Type "ERR" -Message "Error parsing Plex server response: $_"
-        return
     }
 
     if ($null -eq $mediaItem) {
-        Log-Message -Type "ERR" -Message "Media item not found after filtering."
+        Log-Message -Type "ERR" -Message "Media item not found in any section."
         return
     }
 
-    $ratingKey = $mediaItem.ratingKey
-    Log-Message -Type "SUC" -Message "Extracted Rating Key: $ratingKey"
+    # Ensure extracted rating keys are stored as an array
+$ratingKeys = @()
+if ($mediaItem -is [System.Array]) {
+    $ratingKeys = $mediaItem.ratingKey
+} else {
+    $ratingKeys += $mediaItem.ratingKey
+}
 
-    # Call Add-TagToMedia with the appropriate parameters
-    Add-TagToMedia -newTag $plexUsername
-	
-	# Set the preferred audio track for the user
-    if ($enableAudioPref){
-	Set-AudioTrack -ratingKey $ratingKey -plexUsername $plexUsername
-	}
+Log-Message -Type "SUC" -Message "Extracted Rating Keys: $($ratingKeys -join ', ')"
+
+# Call Add-TagToMedia with the appropriate parameters
+Add-TagToMedia -newTag $plexUsername -ratingKeys $ratingKeys
+
+# Apply preferred audio and subtitle settings for each rating key
+if ($enableAudioPref) {
+    foreach ($ratingKey in $ratingKeys) {
+        Set-AudioTrack -ratingKey $ratingKey -plexUsername $plexUsername
+        Set-SubtitleTrack -ratingKey $ratingKey -plexUsername $plexUsername
+    }
+}
+
 }
