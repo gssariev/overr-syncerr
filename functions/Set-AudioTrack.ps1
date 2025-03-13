@@ -52,13 +52,18 @@ function Set-AudioTrack {
             Log-Message -Type "INF" -Message "Processing Season: $($season.title) (RatingKey: $seasonKey)"
             
             # Fetch episodes for the season
-            $episodesUrl = "$plexHost/library/metadata/$seasonKey/children"+"?X-Plex-Token=$plexToken"
-            try {
-                $episodesMetadata = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
-            } catch {
-                Log-Message -Type "ERR" -Message "Error retrieving episodes for Season $($season.index). Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
-                continue
-            }
+$episodesUrl = "$plexHost/library/metadata/$seasonKey/children"+"?X-Plex-Token=$plexToken"
+try {
+    $episodesMetadata = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
+} catch {
+    if ($_.Exception.Response.StatusCode -eq 404) {
+        Log-Message -Type "WRN" -Message "Skipping missing season (RatingKey: $seasonKey) - Not found in Plex."
+        continue  # Skip to the next season instead of failing
+    } else {
+        Log-Message -Type "ERR" -Message "Error retrieving episodes for Season $($season.index). Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
+        continue
+    }
+}
 
             # Loop through episodes
             foreach ($episode in $episodesMetadata.MediaContainer.Video) {
@@ -131,14 +136,14 @@ function Process-MediaItem {
         }
 
         $userPreferences = $userAudioPreferences.$plexUsername.preferred
-        Log-Message -Type "INF" -Message "User '$plexUsername' prefers: $($userPreferences | ForEach-Object { "$($_.language) ($($_.codec) $($_.channels))" })"
+        Log-Message -Type "INF" -Message "User '$plexUsername' prefers: $($userPreferences | ForEach-Object { "$($_.languageCode) ($($_.codec) $($_.channels))" })"
 
         $selectedTrack = $null
 
         # Step 1: Exact Match (Language, Codec, Channels)
         foreach ($pref in $userPreferences) {
             $selectedTrack = $audioTracks | Where-Object {
-                $_.languageTag -eq $pref.language -and $_.codec -eq $pref.codec -and $_.channels -eq $pref.channels
+                $_.languageCode -eq $pref.languageCode -and $_.codec -eq $pref.codec -and $_.channels -eq $pref.channels
             }
             if ($selectedTrack) { break }
         }
@@ -147,7 +152,7 @@ function Process-MediaItem {
         if (-not $selectedTrack) {
             foreach ($pref in $userPreferences) {
                 $selectedTrack = $audioTracks | Where-Object {
-                    $_.languageTag -eq $pref.language
+                    $_.languageCode -eq $pref.languageCode
                 } | Select-Object -First 1
                 if ($selectedTrack) { break }
             }
