@@ -1,31 +1,43 @@
-function Get-SubtitlePath {
+function Get-SubtitleText {
     param (
-        [string]$subtitlePath,
-        [string]$mediaType  # Should be either 'movie' or 'tv'
+        [string]$subtitlePath
     )
 
-    # Retrieve and sanitize environment variables
-    $moviePathMapping = $env:MOVIE_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
-    $tvPathMapping = $env:TV_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
-
-    # Normalize subtitle path
+    # Retrieve and normalize path mappings
+    $moviePathMapping = $env:MOVIE_PATH_MAPPING -replace "\\", "/"
+    $tvPathMapping = $env:TV_PATH_MAPPING -replace "\\", "/"
     $subtitlePath = $subtitlePath -replace "\\", "/"
 
-    # Log initial paths
-    Log-Message -Type "INF" -Message "Original Subtitle Path from Bazarr: '$subtitlePath'"
+    Log-Message -Type "INF" -Message "Received Subtitle Path: '$subtitlePath'"
     Log-Message -Type "DBG" -Message "Configured Movie Path Mapping: '$moviePathMapping'"
     Log-Message -Type "DBG" -Message "Configured TV Path Mapping: '$tvPathMapping'"
 
-    # Path matching logic (simplified)
-    if ($mediaType -eq 'movie' -and $subtitlePath.StartsWith($moviePathMapping)) {
+    # Match and replace paths
+    if ($subtitlePath.StartsWith($moviePathMapping)) {
         $subtitlePath = $subtitlePath -replace [regex]::Escape($moviePathMapping), "/mnt/movies"
-        Log-Message -Type "SUC" -Message "Mapped Movie Subtitle Path: '$subtitlePath'"
-    } elseif ($mediaType -eq 'tv' -and $subtitlePath.StartsWith($tvPathMapping)) {
+        Log-Message -Type "SUC" -Message "Mapped Subtitle Path to Movie Container Path: '$subtitlePath'"
+    } elseif ($subtitlePath.StartsWith($tvPathMapping)) {
         $subtitlePath = $subtitlePath -replace [regex]::Escape($tvPathMapping), "/mnt/tv"
-        Log-Message -Type "SUC" -Message "Mapped TV Subtitle Path: '$subtitlePath'"
+        Log-Message -Type "SUC" -Message "Mapped Subtitle Path to TV Container Path: '$subtitlePath'"
     } else {
-        Log-Message -Type "ERR" -Message "No matching path found for media type '$mediaType'."
+        Log-Message -Type "ERR" -Message "No matching path found for the given subtitle path."
     }
 
-    return $subtitlePath
+    # Debugging before checking file existence
+    Log-Message -Type "DBG" -Message "Checking file existence at path: '$subtitlePath'"
+
+    # Verify file existence
+    if (Test-Path -LiteralPath $subtitlePath) {
+        Log-Message -Type "INF" -Message "Subtitle file exists: '$subtitlePath'"
+        try {
+            $subtitleText = Get-Content -LiteralPath $subtitlePath | Out-String
+            return $subtitleText
+        } catch {
+            Log-Message -Type "ERR" -Message "Error reading subtitle file: $_"
+            return $null
+        }
+    } else {
+        Log-Message -Type "ERR" -Message "Subtitle file does NOT exist: '$subtitlePath'"
+        return $null
+    }
 }
