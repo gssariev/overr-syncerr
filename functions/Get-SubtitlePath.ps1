@@ -4,18 +4,28 @@ function Get-SubtitlePath {
         [string]$mediaType  # Should be either 'movie' or 'tv'
     )
 
-    # Retrieve path mappings from environment variables
-    $moviePathMapping = $env:MOVIE_PATH_MAPPING
-    $tvPathMapping = $env:TV_PATH_MAPPING
+    # Retrieve and sanitize environment variables
+    $moviePathMapping = $env:MOVIE_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
+    $tvPathMapping = $env:TV_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
 
-    if ($mediaType -eq 'movie') {
-        # Replace the matching part of the movie path with the Docker-mounted path
+    # Normalize subtitle path
+    $subtitlePath = $subtitlePath -replace "\\", "/"
+
+    # Log initial paths
+    Log-Message -Type "INF" -Message "Original Subtitle Path from Bazarr: '$subtitlePath'"
+    Log-Message -Type "DBG" -Message "Configured Movie Path Mapping: '$moviePathMapping'"
+    Log-Message -Type "DBG" -Message "Configured TV Path Mapping: '$tvPathMapping'"
+
+    # Path matching logic (simplified)
+    if ($mediaType -eq 'movie' -and $subtitlePath.StartsWith($moviePathMapping)) {
         $subtitlePath = $subtitlePath -replace [regex]::Escape($moviePathMapping), "/mnt/movies"
-    } elseif ($mediaType -eq 'tv') {
-        # Replace the matching part of the TV path with the Docker-mounted path
+        Log-Message -Type "SUC" -Message "Mapped Movie Subtitle Path: '$subtitlePath'"
+    } elseif ($mediaType -eq 'tv' -and $subtitlePath.StartsWith($tvPathMapping)) {
         $subtitlePath = $subtitlePath -replace [regex]::Escape($tvPathMapping), "/mnt/tv"
+        Log-Message -Type "SUC" -Message "Mapped TV Subtitle Path: '$subtitlePath'"
+    } else {
+        Log-Message -Type "ERR" -Message "No matching path found for media type '$mediaType'."
     }
 
-    # Return the updated subtitle path with forward slashes
-    return $subtitlePath -replace "\\", "/"
+    return $subtitlePath
 }
