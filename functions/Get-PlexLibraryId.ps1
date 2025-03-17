@@ -11,6 +11,11 @@ function Get-PlexLibraryIds {
         $response = Invoke-RestMethod -Uri $url -Method Get -ContentType "application/xml"
         $libraries = $response.MediaContainer.Directory
 
+        if (-not $libraries) {
+            Log-Message -Type "ERR" -Message "No libraries found in Plex. Ensure the Plex server is running and accessible."
+            return @{}  # Return an empty object instead of $null to avoid script crashes
+        }
+
         $libraryIds = @{}
 
         foreach ($category in $libraryCategories.Keys) {
@@ -49,9 +54,15 @@ function Get-PlexLibraryIds {
             }
         }
 
+        # Check if any library IDs were found
+        if (-not $libraryIds.Keys.Count) {
+            Log-Message -Type "WRN" -Message "No valid library IDs were found. Skipping."
+            return @{} 
+        }
+
         return $libraryIds
     } catch {
         Log-Message -Type "ERR" -Message "Error fetching Plex library sections: $_"
-        return $null
+        return @{}  # Return an empty object instead of $null to prevent crashes
     }
 }
