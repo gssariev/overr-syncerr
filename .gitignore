@@ -1,0 +1,4 @@
+# Secrets and sensitive files
+.env
+docker-compose.yml
+config/
