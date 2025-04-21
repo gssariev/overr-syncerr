@@ -43,6 +43,12 @@ function Handle-MediaAvailable {
         }
     }
 
+     # Skip TV logic if Sonarr handler is enabled
+     elseif ($mediaType -eq "tv" -and $enableSonarrEpisodeHandler) {
+        Log-Message -Type "WRN" -Message "TV handling skipped due to Sonarr episode handler being enabled."
+        return
+    }
+
     # Handling TV shows (including anime)
     elseif ($mediaType -eq "tv") {
         $sectionIds = $seriesSectionIds

@@ -1,43 +1,55 @@
-function Get-SubtitleText {
+function Set-SubtitleText {
     param (
-        [string]$subtitlePath
+        [string]$subtitlePath,
+        [string]$text,
+        [string]$targetLang
     )
 
-    # Retrieve and normalize path mappings
-    $moviePathMapping = $env:MOVIE_PATH_MAPPING -replace "\\", "/"
-    $tvPathMapping = $env:TV_PATH_MAPPING -replace "\\", "/"
+    # Retrieve and sanitize environment variables
+    $moviePathMapping = $env:MOVIE_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
+    $tvPathMapping = $env:TV_PATH_MAPPING -replace "\\", "/" -replace "\s+$", ""
+
+    # Normalize subtitle path
     $subtitlePath = $subtitlePath -replace "\\", "/"
 
-    Log-Message -Type "INF" -Message "Received Subtitle Path: '$subtitlePath'"
-    Log-Message -Type "DBG" -Message "Configured Movie Path Mapping: '$moviePathMapping'"
-    Log-Message -Type "DBG" -Message "Configured TV Path Mapping: '$tvPathMapping'"
+    # Debugging output before path replacement
+    Write-Host "DEBUG: Checking '$subtitlePath' against '$moviePathMapping'"
+    Write-Host "DEBUG: Checking '$subtitlePath' against '$tvPathMapping'"
 
     # Match and replace paths
     if ($subtitlePath.StartsWith($moviePathMapping)) {
+        Write-Host "DEBUG: Movie path detected. Replacing '$moviePathMapping' with '/mnt/movies'"
         $subtitlePath = $subtitlePath -replace [regex]::Escape($moviePathMapping), "/mnt/movies"
-        Log-Message -Type "SUC" -Message "Mapped Subtitle Path to Movie Container Path: '$subtitlePath'"
     } elseif ($subtitlePath.StartsWith($tvPathMapping)) {
+        Write-Host "DEBUG: TV path detected. Replacing '$tvPathMapping' with '/mnt/tv'"
         $subtitlePath = $subtitlePath -replace [regex]::Escape($tvPathMapping), "/mnt/tv"
-        Log-Message -Type "SUC" -Message "Mapped Subtitle Path to TV Container Path: '$subtitlePath'"
     } else {
-        Log-Message -Type "ERR" -Message "No matching path found for the given subtitle path."
+        Write-Host "ERROR: No matching path found for subtitle path."
     }
 
-    # Debugging before checking file existence
-    Log-Message -Type "DBG" -Message "Checking file existence at path: '$subtitlePath'"
+    # Extract file name and directory path
+    $fileName = [System.IO.Path]::GetFileNameWithoutExtension($subtitlePath)
+    $directoryPath = [System.IO.Path]::GetDirectoryName($subtitlePath)
 
-    # Verify file existence
-    if (Test-Path -LiteralPath $subtitlePath) {
-        Log-Message -Type "INF" -Message "Subtitle file exists: '$subtitlePath'"
-        try {
-            $subtitleText = Get-Content -LiteralPath $subtitlePath | Out-String
-            return $subtitleText
-        } catch {
-            Log-Message -Type "ERR" -Message "Error reading subtitle file: $_"
-            return $null
+    # Extract and replace language code
+    if ($fileName -match "\.\w{2,3}$") {
+        $fileName = $fileName -replace "\.\w{2,3}$", ""
+    }
+
+    # Build new subtitle path
+    $newSubtitlePath = [System.IO.Path]::Combine($directoryPath, "$fileName.$targetLang.srt")
+
+    try {
+        # Ensure directory exists
+        if (-not (Test-Path -Path $directoryPath)) {
+            New-Item -ItemType Directory -Path $directoryPath | Out-Null
+            Write-Host "Created missing directory: $directoryPath"
         }
-    } else {
-        Log-Message -Type "ERR" -Message "Subtitle file does NOT exist: '$subtitlePath'"
-        return $null
+
+        # Save the subtitle file
+        Set-Content -LiteralPath $newSubtitlePath -Value $text
+        Write-Host "Successfully saved subtitle file: $newSubtitlePath"
+    } catch {
+        Write-Host "Failed to write to subtitle file: $_"
     }
 }

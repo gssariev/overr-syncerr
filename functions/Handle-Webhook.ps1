@@ -32,7 +32,18 @@ function Handle-Webhook {
         } else {
             Log-Message -Type "WRN" -Message "Received issue is not handled."
         }
+    } elseif ($payload.PSObject.Properties.Name -contains 'series' -and $payload.PSObject.Properties.Name -contains 'eventType') {
+
+        switch ($payload.eventType) {
+            "Download" {
+                Handle-SonarrEpisodeFileAdded -payload $payload
+            }
+            default {
+                Log-Message -Type "INF" -Message "Unhandled Sonarr event type: $($payload.eventType)"
+            }
+        }
+
     } else {
-        Log-Message -Type "WRN" -Message "Received issue is not handled."
+        Log-Message -Type "WRN" -Message "Received webhook is not handled."
     }
 }
