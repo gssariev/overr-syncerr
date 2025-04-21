@@ -5,142 +5,119 @@ function Start-OverseerrRequestMonitor {
         [string]$plexToken,
         [string]$overseerrApiKey,
         [string]$seriesSectionId,
-        [string]$animeSectionId,
-        [int]$requestIntervalCheck
-    )
-	
-    Write-Host "Starting background job to monitor Overseerr requests."
-
-    # Start an asynchronous job to monitor requests
-    $job = Start-Job -ScriptBlock {
-        param($overseerrUrl, $plexHost, $plexToken, $overseerrApiKey, $seriesSectionId, $animeSectionId, $checkInterval)
-
-        function Add-TagToMedia {
-    param (
-        [string]$newTag,
-        [string]$ratingKey
+        [string]$animeSectionId
     )
 
-    # Ensure that Plex host and token are set
-    if (-not $plexHost -or -not $plexToken) {
-        Write-Host "Plex host or token not set. Cannot proceed."
-        return
-    }
-
-    # Construct the metadata URL for the media item
-    $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
-    Write-Host "Metadata URL: $metadataUrl"
-
-    try {
-        # Fetch the metadata for the media item
-        $metadata = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
-    } catch {
-        Write-Host "Error retrieving metadata: $_"
-        return
-    }
-
-    # Initialize an empty array for current labels
-    $currentLabels = @()
-
-    # Check if the media item has any labels (Video or Directory)
-    if ($metadata.MediaContainer.Video.Label) {
-        if ($metadata.MediaContainer.Video.Label -is [System.Array]) {
-            $currentLabels = $metadata.MediaContainer.Video.Label | ForEach-Object { $_.tag }
-        } else {
-            $currentLabels = @($metadata.MediaContainer.Video.Label.tag)
+    function Add-TagToMedia {
+        param (
+            [string]$newTag,
+            [string]$ratingKey
+        )
+    
+        $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
+        try {
+            $metadata = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
+        } catch {
+            Write-Host "Error retrieving metadata: $_"
+            return
         }
-    } elseif ($metadata.MediaContainer.Directory.Label) {
-        if ($metadata.MediaContainer.Directory.Label -is [System.Array]) {
-            $currentLabels = $metadata.MediaContainer.Directory.Label | ForEach-Object { $_.tag }
-        } else {
-            $currentLabels = @($metadata.MediaContainer.Directory.Label.tag)
-        }
-    }
-
-    Write-Host "Current Labels: $($currentLabels -join ', ')"
-
-    # Add the new tag if it's not already present in the current labels
-    if (-not ($currentLabels -contains $newTag)) {
-        $currentLabels += $newTag
-    } else {
-        Write-Host "Tag '$newTag' already exists. Skipping."
-        return
-    }
-
-    # Encode the labels for the Plex API update
-    $encodedLabels = $currentLabels | ForEach-Object { "label[$($currentLabels.IndexOf($_))].tag.tag=" + [System.Uri]::EscapeDataString($_) }
-    $encodedLabelsString = $encodedLabels -join "&"
-    $updateUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken&$encodedLabelsString&label.locked=1"
-
-    Write-Host "Update URL: $updateUrl"
-
-    try {
-        # Send the update request to Plex
-        $responseResult = Invoke-RestMethod -Uri $updateUrl -Method Put
-        Write-Host "Label added to media item: $($currentLabels -join ', ')"
-    } catch {
-        Write-Host "Error adding label to media item: $_"
-    }
-}
-
-        while ($true) {
-            try {
-                # Headers with the Overseerr API key
-                $headers = @{ 'X-Api-Key' = $overseerrApiKey }
-
-                # Fetch all requests from Overseerr
-                $requestsUrl = "$overseerrUrl/request"
-                Write-Host "Checking Overseerr requests at: $requestsUrl"
-
-                $allRequests = Invoke-RestMethod -Uri $requestsUrl -Method Get -Headers $headers
-
-                if (-not $allRequests.results) {
-                    Write-Host "No requests found."
-                    Start-Sleep -Seconds $checkInterval
-                    continue
-                }
-
-                # Loop through each request and find the ones with status 4 (approved) or 5 (completed)
-                foreach ($request in $allRequests.results) {
-                    if ($request.media.status -in 4, 5) {
-                        Write-Host "Found approved/completed request. Processing media with TMDB ID: $($request.media.tmdbId) or TVDB ID: $($request.media.tvdbId)"
-
-                        $mediaType = $request.media.mediaType
-                        $tmdbId = $request.media.tmdbId
-                        $tvdbId = $request.media.tvdbId
-                        $plexUsername = $request.requestedBy.plexUsername
-                        $ratingKey = $request.media.ratingKey
-
-                        Write-Host "Processing $mediaType request for Plex user: $plexUsername with TMDB ID: $tmdbId or TVDB ID: $tvdbId"
-
-                        # Handle different media types
-                        if ($mediaType -eq "movie") {
-                            Add-TagToMedia -newTag $plexUsername -ratingKey $ratingKey
-                        } elseif ($mediaType -eq "tv") {
-                            # If tmdbId is null, use tvdbId
-                            if ($null -ne $tmdbId) {
-                                Write-Host "Using TMDB ID for TV series lookup."
-                                Add-TagToMedia -newTag $plexUsername -ratingKey $ratingKey
-                            } elseif ($null -ne $tvdbId) {
-                                Write-Host "Using TVDB ID for TV series lookup."
-                                Add-TagToMedia -newTag $plexUsername -ratingKey $ratingKey
-                            } else {
-                                Write-Host "No valid TMDB or TVDB ID found. Skipping."
-                            }
-                        }
-
-                        Write-Host "Tag added successfully for Plex user: $plexUsername."
-                    }
-                }
-
-                # Sleep for the configured interval before checking again
-                Write-Host "Sleeping for $checkInterval seconds before the next check."
-                Start-Sleep -Seconds $checkInterval
-
-            } catch {
-                Write-Host "Error occurred during the Overseerr request check: $_"
+    
+        $currentLabels = @()
+    
+        if ($metadata.MediaContainer.Video.Label) {
+            if ($metadata.MediaContainer.Video.Label -is [System.Array]) {
+                $currentLabels = $metadata.MediaContainer.Video.Label | ForEach-Object { $_.tag }
+            } else {
+                $currentLabels = @($metadata.MediaContainer.Video.Label.tag)
+            }
+        } elseif ($metadata.MediaContainer.Directory.Label) {
+            if ($metadata.MediaContainer.Directory.Label -is [System.Array]) {
+                $currentLabels = $metadata.MediaContainer.Directory.Label | ForEach-Object { $_.tag }
+            } else {
+                $currentLabels = @($metadata.MediaContainer.Directory.Label.tag)
             }
         }
-    } -ArgumentList $overseerrUrl, $plexHost, $plexToken, $overseerrApiKey, $seriesSectionId, $animeSectionId, $requestIntervalCheck
-  
+    
+        if (-not ($currentLabels -contains $newTag)) {
+            $currentLabels += $newTag
+        } else {
+            Write-Host "Label '$newTag' already exists. Skipping."
+            return
+        }
+    
+        $encodedLabels = $currentLabels | ForEach-Object {
+            $index = $currentLabels.IndexOf($_)
+            "label[$index].tag.tag=" + [System.Uri]::EscapeDataString($_)
+        }
+    
+        $encodedLabelsString = $encodedLabels -join "&"
+        $updateUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken&$encodedLabelsString&label.locked=1"
+    
+        try {
+            Invoke-RestMethod -Uri $updateUrl -Method Put
+            Write-Host "Label '$newTag' added to media item $ratingKey."
+        } catch {
+            Write-Host "Failed to update tags for ratingKey ${ratingKey}: $_"
+            Write-Host "Request URL: $updateUrl"
+        }
+    }
+    
+    try {
+        $headers = @{ 'X-Api-Key' = $overseerrApiKey }
+        $page = 1
+        $take = 50
+        $allRequests = @()
+
+        do {
+            $skip = ($page - 1) * $take
+            $requestUrl = "$overseerrUrl/request?take=$take&skip=$skip&filter=all&sort=added&sortDirection=desc"
+            Write-Host "Fetching page ${page}: $requestUrl"
+
+            $response = Invoke-RestMethod -Uri $requestUrl -Method Get -Headers $headers
+
+            if ($response.results) {
+                $allRequests += $response.results
+            }
+
+            $hasMorePages = $page -lt $response.pageInfo.pages
+            $page++
+
+        } while ($hasMorePages)
+
+        if (-not $allRequests) {
+            Write-Host "No requests found."
+            return
+        }
+
+        $matchingRequests = $allRequests | Where-Object { $_.media.status -in 4, 5 }
+
+        if (-not $matchingRequests) {
+            Write-Host "No approved or available requests to process."
+            return
+        }
+
+        foreach ($request in $matchingRequests) {
+            $mediaType = $request.media.mediaType
+            $tmdbId = $request.media.tmdbId
+            $tvdbId = $request.media.tvdbId
+            $plexUsername = $request.requestedBy.plexUsername
+            $ratingKey = $request.media.ratingKey
+
+            if (-not $ratingKey) {
+                Write-Host "Skipping item with no ratingKey."
+                continue
+            }
+
+            Write-Host "Processing $mediaType (ratingKey: $ratingKey) for user: $plexUsername"
+
+            Add-TagToMedia -newTag $plexUsername -ratingKey $ratingKey
+            Set-AudioTrack -ratingKey $ratingKey -seriesSectionId $seriesSectionId -animeSectionId $animeSectionId
+            Set-SubtitleTrack -ratingKey $ratingKey -seriesSectionId $seriesSectionId -animeSectionId $animeSectionId
+        }
+
+        Write-Host "Finished processing all Overseerr partially available and available requests."
+
+    } catch {
+        Write-Host "An error occurred while processing Overseerr requests: $_"
+    }
 }
