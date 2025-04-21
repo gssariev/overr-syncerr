@@ -19,6 +19,9 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 
+## IMPORTANT ##
+**Enable Overseer Request Monitor **AFTER** you've run the script to generate subtitle and audio preferences jsons to ensure that the correct settings get applied.**
+
 ## Current Features
 
 - **Full Sonarr and Radarr Integration**: Easily fetch series and movie details from Sonarr and Radarr.
@@ -38,13 +41,13 @@ Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
 ## To-Do
 
 - **Multiple Libraries Support:** add support for multiple movie and tv libraries ✅
-- **Fetch All Requests:** fetch all requests from Overseerr/Jellyseerr, set audio track and add label 🛠️
+- **Fetch All Requests:** fetch all requests from Overseerr/Jellyseerr, set audio track and add label ✅
 - **Unraid template**
 - **Better Documentation:** make the documentation more concise
 - **Set Preferred Subtitles:**
   - Create subtitles preference ✅
   - Apply subtitle preferences upon media availability - succesffuly set forced/non-forced subs for users ✅
-  - Apply subtitle preferences on all media (new and old) 🛠️
+  - Apply subtitle preferences on all media (new and old) ✅
 ## Contributors
 
 Big thank you to the people helping furher develop this project!
