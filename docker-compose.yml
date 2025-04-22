@@ -37,6 +37,10 @@ services:
       MOVIES_LIBRARY_NAME: "YOUR_MOVIE_LIBRARY_NAME"
       SERIES_LIBRARY_NAME: "YOUR_TV_LIBRARY_NAME"
       SERVER_CLIENTID: "YOUR_PLEX_SERVER_CLIENT_ID"
+      
+      #SONARR WEBHOOK CONFIG
+      SONARR_EP_TRACKING: "false" #Enable to use Sonarr webhook; disables TV logic from being executed via Media Available
+      SONARR_TRACK_DELAY_SECONDS: 12 #Delay (in seconds) before triggering audio and subtitle track preferences to ensure that Plex metadata is refreshed, defaults to 10 if empty
 
       #GPT CONFIG
       #Replace the gpt model with the one you wish. 
