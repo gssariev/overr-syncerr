@@ -1,3 +1,9 @@
+$ErrorActionPreference = "Stop"
+trap {
+    Log-Message -Type "ERR" -Message "Unhandled error: $_"
+    exit 1
+}
+
 # Import Functions
 Get-ChildItem -Path './functions/*.ps1' | ForEach-Object { . $_.FullName }
 
@@ -39,28 +45,45 @@ $openAiApiKey = $env:OPEN_AI_API_KEY
 $useGPT = $env:ENABLE_GPT -eq "true"
 $enableKometa = $env:ENABLE_KOMETA -eq "true"
 $enableAudioPref = $env:ENABLE_AUDIO_PREF -eq "true"
+$enableSonarrEpisodeHandler = $env:SONARR_EP_TRACKING -eq "true"
 $modelGPT = $env:MODEL_GPT
 $maxTokens = [int]$env:MAX_TOKENS
-
 $addLabelKeywords = $env:ADD_LABEL_KEYWORDS
 $languageMapJson = $env:LANGUAGE_MAP
 $syncKeywordsJson = $env:SYNC_KEYWORDS
 
-# Call function at script startup
-if ($enableAudioPref){
-Log-Message -Type "INF" -Message "Fetching Plex user tokens..."
-Get-PlexUserTokens -plexToken $plexToken -plexClientId $plexClientId
-} else {
-    Log-Message -Type "WRN" -Message "Fetcing Plex user tokens is DISABLED."
-}
-# Call function at script startup to ensure the file exists
-if ($enableAudioPref){
-Log-Message -Type "INF" -Message "Generating user audio preferences..."
-Generate-UserAudioPreferences
-} else {
-    Log-Message -Type "WRN" -Message "Audio Preference generation is DISABLED."
+# Determine Plex availability
+$enablePlex = -not ([string]::IsNullOrWhiteSpace($plexHost) -or [string]::IsNullOrWhiteSpace($plexToken))
+if (-not $enablePlex) {
+    Log-Message -Type "WRN" -Message "Plex host or token is not configured. User labels, subtitle, and audio preferences will be DISABLED."
 }
 
+# Default port fallback
+if ([string]::IsNullOrWhiteSpace($port)) {
+    $port = 8089
+    Log-Message -Type "WRN" -Message "PORT environment variable is not set. Defaulting to port 8089."
+} elseif (-not ($port -as [int])) {
+    $port = 8089
+    Log-Message -Type "WRN" -Message "PORT environment variable is invalid. Defaulting to port 8089."
+}
+
+# Generate user tokens and preferences
+if ($enablePlex -and $enableAudioPref) {
+    Log-Message -Type "INF" -Message "Fetching Plex user tokens..."
+    Get-PlexUserTokens -plexToken $plexToken -plexClientId $plexClientId
+
+    Log-Message -Type "INF" -Message "Generating user subtitle preferences..."
+    Generate-UserSubtitlePreferences
+
+    Log-Message -Type "INF" -Message "Generating user audio preferences..."
+    Generate-UserAudioPreferences
+} elseif (-not $enablePlex) {
+    Log-Message -Type "WRN" -Message "Plex is not enabled. Skipping user subtitle/audio preferences."
+} else {
+    Log-Message -Type "WRN" -Message "Fetching Plex user tokens and generating preferences is DISABLED."
+}
+
+# Parse JSON inputs
 try {
     $languageMapPSObject = ConvertFrom-Json -InputObject $languageMapJson
     $languageMap = @{}
@@ -81,91 +104,107 @@ try {
     Log-Message -Type "ERR" -Message "Error parsing sync keywords: $_"
 }
 
-# Organize by type (Movies, TV, Anime)
+# Organize libraries
 $libraryCategories = @{
     "Movies" = $moviesLibraryNames
-    "TV" = $seriesLibraryNames
-    "Anime" = $animeLibraryNames
+    "TV"     = $seriesLibraryNames
+    "Anime"  = $animeLibraryNames
 }
 
-# Fetch library IDs
-$libraryIds = Get-PlexLibraryIds -plexHost $plexHost -plexToken $plexToken -libraryCategories $libraryCategories
+# Fetch section IDs
+if ($enablePlex) {
+    $libraryIds = Get-PlexLibraryIds -plexHost $plexHost -plexToken $plexToken -libraryCategories $libraryCategories
+    $moviesSectionIds = $libraryIds["Movies"]
+    $seriesSectionIds = $libraryIds["TV"]
+    $animeSectionIds = $libraryIds["Anime"]
 
-# Assign section IDs correctly
-$moviesSectionIds = $libraryIds["Movies"]
-$seriesSectionIds = $libraryIds["TV"]
-$animeSectionIds = $libraryIds["Anime"]
+    Log-Message -Type "SUC" -Message "Movies Section IDs: $moviesSectionIds"
+    Log-Message -Type "SUC" -Message "Series Section IDs: $seriesSectionIds"
+    Log-Message -Type "SUC" -Message "Anime Section IDs: $animeSectionIds"
+} else {
+    Log-Message -Type "WRN" -Message "Skipping Plex section ID fetch due to missing configuration."
+}
 
-Log-Message -Type "SUC" -Message "Movies Section IDs: $moviesSectionIds"
-Log-Message -Type "SUC" -Message "Series Section IDs: $seriesSectionIds"
-Log-Message -Type "SUC" -Message "Anime Section IDs: $animeSectionIds"
-
-
-# Check if the environment variable MONITOR_REQUESTS is set to true
+# Check if monitoring is enabled
 $monitorRequests = $env:MONITOR_REQUESTS -eq "true"
 $collectionsInterval = [int]$env:COLLECTIONS_INTERVAL
 
-if ($monitorRequests) {
+if ($monitorRequests -and $enablePlex) {
     Start-OverseerrRequestMonitor -overseerrUrl $overseerrUrl `
                                   -plexHost $plexHost `
                                   -plexToken $plexToken `
-                                  -overseerrApiKey $overseerrApiKey `
-                                  -seriesSectionId $seriesSectionId `
-                                  -animeSectionId $animeSectionId `
-                                  -requestIntervalCheck $requestIntervalCheck
+                                  -overseerrApiKey $overseerrApiKey
     Log-Message -Type "INF" -Message "Started Overseerr request monitor."
+} elseif (-not $enablePlex) {
+    Log-Message -Type "WRN" -Message "Request monitoring skipped: Plex is not enabled."
 } else {
     Log-Message -Type "WRN" -Message "Request monitoring is not enabled. Skipping Overseerr request monitor."
 }
 
-if ($useGPT) {
-    Log-Message -Type "INF" -Message "GPT is used for subtitle translation."
-} else {
-    Log-Message -Type "INF" -Message "Bazarr (Google API) is used for subtitle translation."
+# Feature info logs
+Log-Message -Type "INF" -Message "GPT is $($useGPT ? "used" : "not used") for subtitle translation."
+Log-Message -Type ($enableKometa ? "INF" : "WRN") -Message "Kometa is $($enableKometa ? "ENABLED" : "DISABLED")."
+Log-Message -Type ($enableAudioPref ? "INF" : "WRN") -Message "Audio preference is $($enableAudioPref ? "ENABLED" : "DISABLED")."
+
+function Parse-IncomingPayload {
+    param (
+        [System.Net.HttpListenerRequest]$Request
+    )
+
+    $reader = [System.IO.StreamReader]::new($Request.InputStream)
+    $rawBody = $reader.ReadToEnd()
+    $reader.Close()
+
+    if ($Request.ContentType -and $Request.ContentType -like "*multipart/form-data*") {
+        if ($rawBody -match 'name="payload"\s+Content-Type:\s*application/json\s+(?<json>{.*})\s+--') {
+            $jsonRaw = $matches['json']
+            return $jsonRaw
+        } else {
+            Log-Message -Type "ERR" -Message "Could not parse JSON from multipart payload"
+            return $null
+        }
+    }
+
+    return $rawBody
 }
 
-if ($enableKometa){
-    Log-Message -Type "INF" -Message "Kometa is ENABLED."
-} else {
-    Log-Message -Type "WRN" -Message "Kometa is DISABLED."
-}
+# HTTP listener block
+try {
+    $listener = [System.Net.HttpListener]::new()
+    $listener.Prefixes.Add("http://*:$port/")
+    $listener.Start()
+    Log-Message -Type "INF" -Message "Listening for webhooks on http://localhost:$port/"
 
-if ($enableAudioPref){
-    Log-Message -Type "INF" -Message "Audio preference is ENABLED."
-} else {
-    Log-Message -Type "WRN" -Message "Audio preference is DISABLED."
-}
+    while ($true) {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
 
-# HTTP listener
-$listener = [System.Net.HttpListener]::new()
-$listener.Prefixes.Add("http://*:$port/")
-$listener.Start()
+        if ($request.HttpMethod -eq "POST") {
+            $jsonPayload = Parse-IncomingPayload -Request $request
 
-Log-Message -Type "INF" -Message "Listening for webhooks on http://localhost:$port/"
+            if ($null -ne $jsonPayload) {
+                Enqueue-Payload -Payload $jsonPayload
+            } else {
+                Log-Message -Type "ERR" -Message "Failed to extract payload from request."
+            }
 
-while ($true) {
-    $context = $listener.GetContext()
-    $request = $context.Request
-    $response = $context.Response
+            Process-Queue
 
-    if ($request.HttpMethod -eq "POST") {
-        $reader = [System.IO.StreamReader]::new($request.InputStream)
-        $jsonPayload = $reader.ReadToEnd()
-        $reader.Close()
-
-        Log-Message -Type "INF" -Message "Received payload: $jsonPayload"
-
-        Enqueue-Payload -Payload $jsonPayload
-        Process-Queue
-
-        $response.StatusCode = 200
-        $response.StatusDescription = "OK"
-        $response.Close()
-    } else {
-        $response.StatusCode = 405
-        $response.StatusDescription = "Method Not Allowed"
-        $response.Close()
+            $response.StatusCode = 200
+            $response.StatusDescription = "OK"
+            $response.Close()
+        } else {
+            $response.StatusCode = 405
+            $response.StatusDescription = "Method Not Allowed"
+            $response.Close()
+        }
+    }
+} catch {
+    Log-Message -Type "ERR" -Message "HTTP listener error: $_"
+} finally {
+    if ($listener) {
+        $listener.Stop()
+        Log-Message -Type "WRN" -Message "HTTP listener stopped unexpectedly."
     }
 }
-
-$listener.Stop()
