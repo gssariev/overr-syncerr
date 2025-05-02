@@ -1,7 +1,6 @@
 function Handle-SubtitlesIssue {
     param ([psobject]$payload)
 
-    Write-Host "Subtitle issue detected"
 
     # Fetch user details from Overseerr API
     $reportedByPlexUsername = $payload.issue.reportedBy_username
@@ -21,7 +20,7 @@ function Handle-SubtitlesIssue {
         # Find the user with the matching Plex username
         $user = $users | Where-Object { $_.plexUsername -eq $reportedByPlexUsername }
         if ($user) {
-            Write-Host "User found: $($user.plexUsername)"
+            Log-Message -Type "INF" -Message "User found: $($user.plexUsername)"
             $userId = $user.id
             $userDetailsApiUrl = "$overseerrUrl/user/$userId"
 
@@ -29,20 +28,20 @@ function Handle-SubtitlesIssue {
                 $userDetailsResponse = Invoke-RestMethod -Uri $userDetailsApiUrl -Headers $headers -Method Get
                 if ($userDetailsResponse.settings -and $userDetailsResponse.settings.locale) {
                     $locale = $userDetailsResponse.settings.locale
-                    Write-Host "User's locale: $locale"
+                    Log-Message -Type "INF" -Message "User's locale: $locale"
                 } else {
-                    Write-Host "Locale not found in user's settings, using default locale: en"
+                    Log-Message -Type "WRN" -Message "Locale not found in user's settings, using default locale: en"
                 }
             } catch {
-                Write-Host "Failed to fetch detailed user settings: $_"
-                Write-Host "Using default locale."
+                Log-Message -Type "ERR" -Message "Failed to fetch detailed user settings: $_"
+                Log-Message -Type "INF" -Message "Using default locale."
             }
         } else {
-            Write-Host "User not found, using default locale."
+            Log-Message -Type "WRN" -Message "User not found, using default locale."
         }
     } catch {
-        Write-Host "Failed to fetch user details from Overseerr: $_"
-        Write-Host "Using default locale."
+        Log-Message -Type "ERR" -Message "Failed to fetch user details from Overseerr: $_"
+        Log-Message -Type "INF" -Message "Using default locale."
     }
 
     $is4K = $payload.message -match "(?i)4K"
@@ -54,7 +53,7 @@ function Handle-SubtitlesIssue {
 	
 
     if (-not $containsSyncKeyword -and -not $containsAdjustBy -and -not $containsOffset -and -not $containsTranslate) {
-        Write-Host "Issue message does not contain sync, adjust by, offset, or translate keywords, skipping."
+        Log-Message -Type "INF" -Message "Issue message does not contain sync, adjust by, offset, or translate keywords, skipping."
         return
     }
 
@@ -67,88 +66,88 @@ function Handle-SubtitlesIssue {
     $sonarrApiKey = if ($is4K) { $sonarr4kApiKey } else { $sonarrApiKey }
     $sonarrUrl = if ($is4K) { $sonarr4kUrl } else { $sonarrUrl }
 
-    Write-Host "Using bazarrUrl: $bazarrUrl"
+    Log-Message -Type "INF" -Message "Using bazarrUrl: $bazarrUrl"
 
     # Handle movie subtitles
     if ($payload.media.media_type -eq "movie") {
         $tmdbId = $payload.media.tmdbId
-        Write-Host "Fetching movie details from Radarr for tmdbId: $tmdbId"
+        Log-Message -Type "INF" -Message "Fetching movie details from Radarr for tmdbId: $tmdbId"
 
         try {
             $radarrMovieDetails = Get-RadarrMovieDetails -tmdbId $tmdbId -radarrApiKey $radarrApiKey -radarrUrl $radarrUrl
         } catch {
-            Write-Host (Translate-Message -key "MovieDetailsNotFound" -language $locale)
+            WritLog-Message -Type "ERR" -Messagee-Host (Translate-Message -key "MovieDetailsNotFound" -language $locale)
             return
         }
 
         if ($radarrMovieDetails) {
             $movieId = $radarrMovieDetails.id
             $radarrId = $movieId
-            Write-Host "Movie ID: $movieId, Radarr ID: $radarrId"
+            Log-Message -Type "INF" -Message "Movie ID: $movieId"
 
             if ($containsTranslate) {
                 if ($payload.message -match "translate (\w{2}) to (\w{2})") {
                     $sourceLang = $matches[1]
                     $targetLang = $matches[2]
-                    Write-Host "Source language: $sourceLang, Target language: $targetLang"
+                    Log-Message -Type "INF" -Message "Source language: $sourceLang, Target language: $targetLang"
 
                     $sourceLanguageName = Map-LanguageCode -languageCode $sourceLang -languageMap $languageMap
-                    Write-Host "Mapped Source Language Name: $sourceLanguageName"
+                    Log-Message -Type "INF" -Message "Mapped Source Language Name: $sourceLanguageName"
                     $targetLanguageName = Map-LanguageCode -languageCode $targetLang -languageMap $languageMap
-                    Write-Host "Mapped Target Language Name: $targetLanguageName"
+                    Log-Message -Type "INF" -Message "Mapped Target Language Name: $targetLanguageName"
 
                     $newSubtitlePath = Get-BazarrMovieSubtitlePath -radarrId $radarrId -languageName $sourceLanguageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                    Write-Host "Subtitle Path: $newSubtitlePath"
+                    Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
                     if ($newSubtitlePath) {
                         $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                         $targetLanguageCode = Get-BazarrLanguageCode -languageName $targetLanguageName -bazarrUrl $bazarrUrl -bazarrApiKey $bazarrApiKey
                         if ($targetLanguageCode) {
                             if ($useGPT) {
-                                Write-Host "Translating with GPT"
+                                Log-Message -Type "INF" -Message "Translating with GPT"
                                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "GptTranslateStart" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 								$gptSubtitlePath = Get-GPTTranslationChunked -text (Get-SubtitleText -subtitlePath $newSubtitlePath) -sourceLang $sourceLang -targetLang $targetLang
                                 Set-SubtitleText -subtitlePath $newSubtitlePath -text $gptSubtitlePath -targetLang $targetLang
-								Write-Host "GPT Translation completed"
+								Log-Message -Type "SUC" -Message "GPT Translation completed"
                                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                 Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                             } else {
                                 $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=translate&language=$targetLanguageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&apikey=$bazarrApiKey"
-                                Write-Host "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
+                                Log-Message -Type "INF" -Message "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
                                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationStarted" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl 
                                 try {
                                     $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                                    Write-Host "Bazarr response: Translated"
+                                    Log-Message -Type "INF" -Message "Bazarr response: Translated"
                                     Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                     Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                 } catch {
-                                    Write-Host "Failed to send translation request to Bazarr: $_"
+                                    Log-Message -Type "ERR" -Message "Failed to send translation request to Bazarr: $_"
                                 }
                             }
                         } else {
-                            Write-Host "Failed to get Bazarr language code for $targetLanguageName"
+                            Log-Message -Type "ERR" -Message "Failed to get Bazarr language code for $targetLanguageName"
                         }
                     } else {
-                        Write-Host (Translate-Message -key "SubtitlesMissing" -language $locale)
+                        Log-Message -Type "ERR" -Message (Translate-Message -key "SubtitlesMissing" -language $locale)
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SubtitlesMissing" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     }
                 } else {
-                    Write-Host (Translate-Message -key "FailedToParseLanguages" -language $locale)
+                    Log-Message -Type "ERR" -Message (Translate-Message -key "FailedToParseLanguages" -language $locale)
                 }
                 return
             }
 
             # Syncing logic for movies
             $languageName = Map-LanguageCode -languageCode $payload.message.Split()[0] -languageMap $languageMap
-            Write-Host "Mapped Language Name: $languageName"
+            Log-Message -Type "INF" -Message "Mapped Language Name: $languageName"
 
             $newSubtitlePath = Get-BazarrMovieSubtitlePath -radarrId $radarrId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-            Write-Host "Subtitle Path: $newSubtitlePath"
+            Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
             if ($newSubtitlePath) {
                 $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
-                Write-Host "Extracted Language Code: $languageCode"
+                Log-Message -Type "INF" -Message "Extracted Language Code: $languageCode"
                 
                 $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                 if ($containsAdjustBy -and $shiftOffset -ne $null) {
@@ -159,24 +158,24 @@ function Handle-SubtitlesIssue {
                 } else {
                     $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=movie&id=$movieId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                 }
-                Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+                Log-Message -Type "INF" -Message "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SyncStarted" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
                 try {
                     $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                    Write-Host "Bazarr response: Synced"
+                    Log-Message -Type "SUC" -Message "Bazarr response: Synced"
                     Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SyncFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                 } catch {
-                    Write-Host "Failed to send PATCH request to Bazarr: $_"
+                    Log-Message -Type "ERR" -Message "Failed to send PATCH request to Bazarr: $_"
                 }
             } else {
-                Write-Host (Translate-Message -key "SubtitlesMissing" -language $locale)
+                Log-Message -Type "ERR" -Message (Translate-Message -key "SubtitlesMissing" -language $locale)
                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SubtitlesMissing" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                 Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
             }
         } else {
-            Write-Host (Translate-Message -key "MovieDetailsNotFound" -language $locale)
+            Log-Message -Type "ERR" -Message (Translate-Message -key "MovieDetailsNotFound" -language $locale)
         }
 
     # Handle TV subtitles
@@ -184,82 +183,82 @@ function Handle-SubtitlesIssue {
         $tvdbId = $payload.media.tvdbId
         $affectedSeason = $payload.extra | Where-Object { $_.name -eq "Affected Season" } | Select-Object -ExpandProperty value
         $affectedEpisode = $payload.extra | Where-Object { $_.name -eq "Affected Episode" } | Select-Object -ExpandProperty value
-        Write-Host "Fetching seriesId from Sonarr for tvdbId: $tvdbId"
+        Log-Message -Type "INF" -Message "Fetching seriesId from Sonarr for tvdbId: $tvdbId"
 
         $seriesId = Get-SonarrSeriesId -tvdbId $tvdbId -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
         if ($seriesId) {
-            Write-Host "Series ID: $seriesId"
+            Log-Message -Type "INF" -Message "Series ID: $seriesId"
 
             if ($affectedEpisode) {
-                Write-Host "Fetching episode details from Sonarr for seriesId: $seriesId, season: $affectedSeason, episode: $affectedEpisode"
+                Log-Message -Type "INF" -Message "Fetching episode details from Sonarr for seriesId: $seriesId, season: $affectedSeason, episode: $affectedEpisode"
                 $episodeDetails = Get-SonarrEpisodeDetails -seriesId $seriesId -seasonNumber ([int]$affectedSeason) -episodeNumber ([int]$affectedEpisode) -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
                 if ($episodeDetails) {
                     $episodeId = $episodeDetails.id
                     $episodeNumber = $episodeDetails.episodeNumber
-                    Write-Host "Episode ID: $episodeId, Episode Number: $episodeNumber"
+                    Log-Message -Type "INF" -Message "Episode ID: $episodeId, Episode Number: $episodeNumber"
 
                     if ($containsTranslate) {
                         if ($payload.message -match "translate (\w{2}) to (\w{2})") {
                             $sourceLang = $matches[1]
                             $targetLang = $matches[2]
-                            Write-Host "Source language: $sourceLang, Target language: $targetLang"
+                            Log-Message -Type "INF" -Message "Source language: $sourceLang, Target language: $targetLang"
 
                             $sourceLanguageName = Map-LanguageCode -languageCode $sourceLang -languageMap $languageMap
-                            Write-Host "Mapped Source Language Name: $sourceLanguageName"
+                            Log-Message -Type "INF" -Message "Mapped Source Language Name: $sourceLanguageName"
                             $targetLanguageName = Map-LanguageCode -languageCode $targetLang -languageMap $languageMap
-                            Write-Host "Mapped Target Language Name: $targetLanguageName"
+                            Log-Message -Type "INF" -Message "Mapped Target Language Name: $targetLanguageName"
 
                             $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $sourceLanguageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                            Write-Host "Subtitle Path: $newSubtitlePath"
+                            Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
                             if ($newSubtitlePath) {
                                 $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                                 $targetLanguageCode = Get-BazarrLanguageCode -languageName $targetLanguageName -bazarrUrl $bazarrUrl -bazarrApiKey $bazarrApiKey
                                 if ($targetLanguageCode) {
                                     if ($useGPT) {
-                                        Write-Host "Translating with GPT"
+                                        Log-Message -Type "INF" -Message "Translating with GPT"
 										Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "GptTranslateStart" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                         $gptSubtitlePath = Get-GPTTranslationChunked -text (Get-SubtitleText -subtitlePath $newSubtitlePath) -sourceLang $sourceLang -targetLang $targetLang
                                         Set-SubtitleText -subtitlePath $newSubtitlePath -text $gptSubtitlePath -targetLang $targetLang
-                                        Write-Host "GPT Translation completed"
+                                        Log-Message -Type "SUC" -Message "GPT Translation completed"
                                         Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                     } else {
                                         $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=translate&language=$targetLanguageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&apikey=$bazarrApiKey"
-                                        Write-Host "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
+                                        Log-Message -Type "INF" -Message "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
                                         try {
                                             $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                                            Write-Host "Bazarr response: Translated"
+                                            Log-Message -Type "SUC" -Message "Bazarr response: Translated"
                                             Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                             Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                         } catch {
-                                            Write-Host "Failed to send translation request to Bazarr: $_"
+                                            Log-Message -Type "ERR" -Message "Failed to send translation request to Bazarr: $_"
                                         }
                                     }
                                 } else {
-                                    Write-Host "Failed to get Bazarr language code for $targetLanguageName"
+                                    Log-Message -Type "ERR" -Message "Failed to get Bazarr language code for $targetLanguageName"
                                 }
                             } else {
-                                Write-Host (Translate-Message -key "SubtitlesMissing" -language $locale)
+                                Log-Message -Type "ERR" -Message (Translate-Message -key "SubtitlesMissing" -language $locale)
                                 Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SubtitlesMissing" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                 Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                             }
                         } else {
-                            Write-Host (Translate-Message -key "FailedToParseLanguages" -language $locale)
+                            Log-Message -Type "ERR" -Message (Translate-Message -key "FailedToParseLanguages" -language $locale)
                         }
                         return
                     }
 
                     # Syncing logic for single episode
                     $languageName = Map-LanguageCode -languageCode $payload.message.Split()[0] -languageMap $languageMap
-                    Write-Host "Mapped Language Name: $languageName"
+                    Log-Message -Type "INF" -Message "Mapped Language Name: $languageName"
 
                     $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                    Write-Host "Subtitle Path: $newSubtitlePath"
+                    Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
                     if ($newSubtitlePath) {
                         $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
-                        Write-Host "Extracted Language Code: $languageCode"
+                        Log-Message -Type "INF" -Message "Extracted Language Code: $languageCode"
                         
                         $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                         if ($containsAdjustBy -and $shiftOffset -ne $null) {
@@ -270,76 +269,76 @@ function Handle-SubtitlesIssue {
                         } else {
                             $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                         }
-                        Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+                        Log-Message -Type "INF" -Message "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SyncStarted" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
                         try {
                             $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                            Write-Host "Bazarr response: Synced"
+                            Log-Message -Type "SUC" -Message "Bazarr response: Synced"
                             Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SyncFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                             Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         } catch {
-                            Write-Host "Failed to send PATCH request to Bazarr: $_"
+                            Log-Message -Type "ERR" -Message "Failed to send PATCH request to Bazarr: $_"
                         }
                     } else {
-                        Write-Host (Translate-Message -key "SubtitlesMissing" -language $locale)
+                        Log-Message -Type "ERR" -Message (Translate-Message -key "SubtitlesMissing" -language $locale)
                         Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SubtitlesMissing" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     }
                 } else {
-                    Write-Host "Episode details not found in Sonarr"
+                    Log-Message -Type "ERR" -Message "Episode details not found in Sonarr"
                 }
 
             } else {
                 # Syncing logic for multiple episodes
-                Write-Host "Affected Episode missing, fetching all episodes for season: $affectedSeason"
+                Log-Message -Type "INF" -Message "Affected Episode missing, fetching all episodes for season: $affectedSeason"
                 $episodes = Get-SonarrEpisodesBySeason -seriesId $seriesId -seasonNumber ([int]$affectedSeason) -sonarrApiKey $sonarrApiKey -sonarrUrl $sonarrUrl
                 if ($episodes) {
                     if ($containsTranslate) {
                         if ($payload.message -match "translate (\w{2}) to (\w{2})") {
                             $sourceLang = $matches[1]
                             $targetLang = $matches[2]
-                            Write-Host "Source language: $sourceLang, Target language: $targetLang"
+                            Log-Message -Type "INF" -Message "Source language: $sourceLang, Target language: $targetLang"
 
                             $sourceLanguageName = Map-LanguageCode -languageCode $sourceLang -languageMap $languageMap
-                            Write-Host "Mapped Source Language Name: $sourceLanguageName"
+                            Log-Message -Type "INF" -Message "Mapped Source Language Name: $sourceLanguageName"
                             $targetLanguageName = Map-LanguageCode -languageCode $targetLang -languageMap $languageMap
-                            Write-Host "Mapped Target Language Name: $targetLanguageName"
+                            Log-Message -Type "INF" -Message "Mapped Target Language Name: $targetLanguageName"
 
                             Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationStarted" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
 
                             foreach ($episode in $episodes) {
                                 $episodeId = $episode.id
                                 $episodeNumber = $episode.episodeNumber
-                                Write-Host "Processing episode ID: $episodeId, Episode Number: $episodeNumber"
+                                Log-Message -Type "INF" -Message "Processing episode ID: $episodeId, Episode Number: $episodeNumber"
 
                                 $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $sourceLanguageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                                Write-Host "Subtitle Path: $newSubtitlePath"
+                                Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
                                 if ($newSubtitlePath) {
                                     $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                                     $targetLanguageCode = Get-BazarrLanguageCode -languageName $targetLanguageName -bazarrUrl $bazarrUrl -bazarrApiKey $bazarrApiKey
                                     if ($targetLanguageCode) {
                                         if ($useGPT) {
-                                            Write-Host "Translating with GPT"
+                                            Log-Message -Type "INF" -Message "Translating with GPT"
                                             $gptSubtitlePath = Get-GPTTranslationChunked -text (Get-SubtitleText -subtitlePath $newSubtitlePath) -sourceLang $sourceLang -targetLang $targetLang
                                             Set-SubtitleText -subtitlePath $newSubtitlePath -text $gptSubtitlePath -targetLang $targetLang
-                                            Write-Host "GPT Translation completed"
+                                            Log-Message -Type "SUC" -Message "GPT Translation completed"
                                         } else {
                                             $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=translate&language=$targetLanguageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&apikey=$bazarrApiKey"
-                                            Write-Host "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
+                                            Log-Message -Type "INF" -Message "Sending translation request to Bazarr with URL: $bazarrUrlWithParams"
                                             try {
                                                 $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                                                Write-Host "Bazarr response: Translated"
+                                                Log-Message -Type "SUC" -Message "Bazarr response: Translated"
                                             } catch {
-                                                Write-Host "Failed to send translation request to Bazarr: $_"
+                                                Log-Message -Type "ERR" -Message "Failed to send translation request to Bazarr: $_"
                                             }
                                         }
                                     } else {
-                                        Write-Host "Failed to get Bazarr language code for $targetLanguageName"
+                                        Log-Message -Type "ERR" -Message "Failed to get Bazarr language code for $targetLanguageName"
                                     }
                                 } else {
-                                    Write-Host (Translate-Message -key "SubtitlesMissing" -language $locale)
+                                    Log-Message -Type "INF" -Message (Translate-Message -key "SubtitlesMissing" -language $locale)
                                     Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SubtitlesMissing" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                     Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                                 }
@@ -348,13 +347,13 @@ function Handle-SubtitlesIssue {
                             Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "TranslationFinished" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                             Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                         } else {
-                            Write-Host (Translate-Message -key "FailedToParseLanguages" -language $locale)
+                            Log-Message -Type "ERR" -Message (Translate-Message -key "FailedToParseLanguages" -language $locale)
                         }
                         return
                     }
 
                     $languageName = Map-LanguageCode -languageCode $payload.message.Split()[0] -languageMap $languageMap
-                    Write-Host "Mapped Language Name: $languageName"
+                    Log-Message -Type "INF" -Message "Mapped Language Name: $languageName"
                     
                     Post-OverseerrComment -issueId $payload.issue.issue_id -message (Translate-Message -key "SyncStarted" -language $locale) -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     
@@ -364,14 +363,14 @@ function Handle-SubtitlesIssue {
                     foreach ($episode in $episodes) {
                         $episodeId = $episode.id
                         $episodeNumber = $episode.episodeNumber
-                        Write-Host "Processing episode ID: $episodeId, Episode Number: $episodeNumber"
+                        Log-Message -Type "INF" -Message "Processing episode ID: $episodeId, Episode Number: $episodeNumber"
 
                         $newSubtitlePath = Get-BazarrEpisodeSubtitlePath -seriesId $seriesId -episodeId $episodeId -languageName $languageName -hearingImpaired $isHI -bazarrApiKey $bazarrApiKey -bazarrUrl $bazarrUrl
-                        Write-Host "Subtitle Path: $newSubtitlePath"
+                        Log-Message -Type "INF" -Message "Subtitle Path: $newSubtitlePath"
 
                         if ($newSubtitlePath) {
                             $languageCode = Extract-LanguageCodeFromPath -subtitlePath $newSubtitlePath
-                            Write-Host "Extracted Language Code: $languageCode"
+                            Log-Message -Type "INF" -Message "Extracted Language Code: $languageCode"
                             
                             $encodedSubtitlePath = [System.Web.HttpUtility]::UrlEncode($newSubtitlePath)
                             if ($containsAdjustBy -and $shiftOffset -ne $null) {
@@ -382,13 +381,13 @@ function Handle-SubtitlesIssue {
                             } else {
                                 $bazarrUrlWithParams = "$bazarrUrl/subtitles?action=sync&language=$languageCode&path=$encodedSubtitlePath&type=episode&id=$episodeId&reference=(a%3A0)&gss=true&apikey=$bazarrApiKey"
                             }
-                            Write-Host "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
+                            Log-Message -Type "INF" -Message "Sending PATCH request to Bazarr with URL: $bazarrUrlWithParams"
 
                             try {
                                 $bazarrResponse = Invoke-RestMethod -Uri $bazarrUrlWithParams -Method Patch
-                                Write-Host "Bazarr response: Synced"
+                                Log-Message -Type "SUC" -Message "Bazarr response: Synced"
                             } catch {
-                                Write-Host "Failed to send PATCH request to Bazarr: $_"
+                                Log-Message -Type "ERR" -Message "Failed to send PATCH request to Bazarr: $_"
                                 $allSubtitlesSynced = $false
                                 $failedEpisodes += $episodeNumber
                             }
@@ -408,13 +407,13 @@ function Handle-SubtitlesIssue {
                         Resolve-OverseerrIssue -issueId $payload.issue.issue_id -overseerrApiKey $overseerrApiKey -overseerrUrl $overseerrUrl
                     }
                 } else {
-                    Write-Host "No episodes found for season: $affectedSeason"
+                    Log-Message -Type "ERR" -Message "No episodes found for season: $affectedSeason"
                 }
             }
         } else {
-            Write-Host "Series ID not found in Sonarr"
+            Log-Message -Type "ERR" -Message "Series ID not found in Sonarr"
         }
     } else {
-        Write-Host "Unsupported media type: $($payload.media.media_type)"
+        Log-Message -Type "ERR" -Message "Unsupported media type: $($payload.media.media_type)"
     }
 }
