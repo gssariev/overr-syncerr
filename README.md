@@ -17,7 +17,7 @@ Overr-Syncerr is a script designed to automate the management of subtitle synchr
 
 ## Getting Started
 
-Refer to the official Overr-Syncerr docs at - https://docs.overrsyncerr.info
+Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 
 ## IMPORTANT ##
 **Enable Overseer Request Monitor **AFTER** you've run the script to generate subtitle and audio preferences jsons to ensure that the correct settings get applied.**
