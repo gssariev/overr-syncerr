@@ -125,49 +125,60 @@ function Process-SubtitleTrack {
         }
 
         $userPreferences = $userSubtitlePreferences.$plexUsername.preferred
-        Log-Message -Type "INF" -Message "User '$plexUsername' prefers: $($userPreferences | ForEach-Object { "$($_.languageCode) ($($_.codec)) Forced: $($_.forced)" })"
+        $fallbackConfig = $userSubtitlePreferences.$plexUsername.fallback
+        $fallbackEnabled = $fallbackConfig.enabled -eq $true
+        $fallbackPreferences = $fallbackConfig.preferences
+
+        Log-Message -Type "INF" -Message "User '$plexUsername' prefers: $($userPreferences | ForEach-Object { "$($_.languageCode) ($($_.codec)) Forced: $($_.forced) HI: $($_.hearingImpaired)" }) Fallback enabled: $fallbackEnabled"
 
         $selectedTrack = $null
 
-        # Step 1: Exact Match (LanguageCode, Codec, Forced)
+        # Step 1: Exact Match (LanguageCode, Codec, Forced, HearingImpaired)
         foreach ($pref in $userPreferences) {
             $selectedTrack = $subtitleTracks | Where-Object {
                 $_.languageCode -eq $pref.languageCode -and
                 $_.codec -eq $pref.codec -and
-                (([bool]$_.forced -or $false) -eq $pref.forced)
+                (([bool]$_.forced -or $false) -eq $pref.forced) -and
+                (([bool]$_.hearingImpaired -or $false) -eq $pref.hearingImpaired)
             } | Select-Object -First 1
             if ($selectedTrack) { break }
         }
 
-        # Step 2: LanguageCode + Codec Match (Ignore Forced Flag)
-        if (-not $selectedTrack) {
-            foreach ($pref in $userPreferences) {
+        # Step 2: Apply Fallback if Enabled
+        if (-not $selectedTrack -and $fallbackEnabled) {
+            Log-Message -Type "INF" -Message "No preferred subtitles found. Fallback is enabled for user '$plexUsername'. Checking fallback preferences."
+            foreach ($fallbackPref in $fallbackPreferences) {
                 $selectedTrack = $subtitleTracks | Where-Object {
-                    $_.languageCode -eq $pref.languageCode -and
-                    $_.codec -eq $pref.codec
+                    $_.languageCode -eq $fallbackPref.languageCode -and
+                    $_.codec -eq $fallbackPref.codec -and
+                    (([bool]$_.forced -or $false) -eq $fallbackPref.forced) -and
+                    (([bool]$_.hearingImpaired -or $false) -eq $fallbackPref.hearingImpaired)
                 } | Select-Object -First 1
-                if ($selectedTrack) { break }
+                if ($selectedTrack) {
+                    Log-Message -Type "INF" -Message "Fallback track selected for user '$plexUsername': $($selectedTrack.extendedDisplayTitle)"
+                    break
+                }
             }
         }
 
-        # Step 3: Apply Fallback (if defined)
-        if (-not $selectedTrack -and $userSubtitlePreferences.$plexUsername.fallback) {
-            $fallbackPref = $userSubtitlePreferences.$plexUsername.fallback
-            Log-Message -Type "INF" -Message "Applying fallback for user '$plexUsername': Codec=$($fallbackPref.codec), Forced=$($fallbackPref.forced)"
-
-            $selectedTrack = $subtitleTracks | Where-Object {
-                $_.codec -eq $fallbackPref.codec -and
-                (([bool]$_.forced -or $false) -eq $fallbackPref.forced)
-            } | Select-Object -First 1
-        }
-
-        # Step 4: Skip Subtitle Selection If No Match Found
+        # Step 3: Set to "No Subtitles" if No Track Found
         if (-not $selectedTrack) {
-            Log-Message -Type "WRN" -Message "No suitable subtitle track found for user '$plexUsername'. Skipping subtitle selection."
+            Log-Message -Type "WRN" -Message "No suitable subtitle track found for user '$plexUsername'. Disabling subtitles."
+            
+            # Set to "no subtitles" by specifying the stream ID as 0
+            $updateUrl = "$plexHost/library/parts/$partId"+"?X-Plex-Token=$userToken&subtitleStreamID=0"
+            
+            try {
+                Invoke-RestMethod -Uri $updateUrl -Method Put
+                Log-Message -Type "SUC" -Message "No subtitles set for user '$plexUsername'."
+            } catch {
+                Log-Message -Type "ERR" -Message "Error disabling subtitles for user '$plexUsername'. Status: $($_.Exception.Response.StatusCode) - $($_.Exception.Message)"
+            }
+
             continue
         }
 
-        # Step 5: Set Subtitle Track
+        # Step 4: Set Subtitle Track
         $subtitleStreamId = $selectedTrack.id
         $updateUrl = "$plexHost/library/parts/$partId"+"?X-Plex-Token=$userToken&subtitleStreamID=$subtitleStreamId"
 
