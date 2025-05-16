@@ -39,10 +39,14 @@ function Generate-UserSubtitlePreferences {
                 # Assign a default preference with prioritized list
                 $defaultPreferences[$plexUsername] = @{
                     "preferred" = @(
-                        @{ "languageCode" = "eng"; "forced" = $true; "codec" = "srt" } # Prefer forced SRT subtitles
-                        
+                        @{ "languageCode" = "eng"; "forced" = $true; "hearingImpaired" = $true; "codec" = "srt" } # Prefer forced SRT subtitles
                     );
-                    "fallback" = @{ "forced" = $false; "codec" = "srt" } # Default fallback to non-forced SRT
+                    "fallback" = @{
+                        "enabled" = $true;
+                        "preferences" = @(
+                            @{ "languageCode" = "eng"; "forced" = $false; "hearingImpaired" = $true; "codec" = "srt" } # Default fallback
+                        )
+                    }
                 }
                 Log-Message -Type "INF" -Message "Added default subtitle preference for user: $plexUsername"
             }
