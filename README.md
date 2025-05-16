@@ -35,23 +35,16 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 - **Auto-reply & resolve issue**: Automatically reply to the reported subtitle issue in Overseerr/Jellyseerr upon subtitles synchronization and mark it as resolved.
 - **Sync all episodes in season**: Submit all subtitles in a specific language to be synced by selecting 'All Episodes' when submitting the subtitle issue.
 - **User Audio Preference:** set preffered audio track based on language, codec and channel per user automatically once media becomes available
+- **User Subtitle Preference:** set preffered subtitle track based on language, codec, forced or hearing impaired properties per user automatically once media becomes available
 - **Auto-labelling**: Option to label available requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))
 - **Translate Subs Using GPT**: Option to use OpenAI GPT instead of Google Translate for subtitle translation **OpenAI API Key Required**
 
 ## Known issues (WIP)
 
-- **Preffered Audio Track:** preffered language get incorrectly assigned in media with mutli-language tracks - fixed in upcoming release ✅
+- If you've encountered and issue or have a suggestions, you're welcome to post about it :)
 
 ## To-Do
-
-- **Multiple Libraries Support:** add support for multiple movie and tv libraries ✅
-- **Fetch All Requests:** fetch all requests from Overseerr/Jellyseerr, set audio track and add label ✅
-- **Unraid template** ✅
-- **Better Documentation:** make the documentation more concise
-- **Set Preferred Subtitles:**
-  - Create subtitles preference ✅
-  - Apply subtitle preferences upon media availability - succesffuly set forced/non-forced subs for users ✅
-  - Apply subtitle preferences on all media (new and old) ✅
+- Integrate Mediux for automatic poster and title card application based on favourite creators (**NO** **ETA**)
 ## Contributors
 
 Big thank you to the people helping furher develop this project!
@@ -62,9 +55,15 @@ Big thank you to the people helping furher develop this project!
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kirsch33"><img src="https://avatars1.githubusercontent.com/u/37373320?v=4?s=100" width="100px;" alt="sct"/><br /><sub><b>kirsch33</b></sub></a><br /><a href="https://github.com/gssariev/overr-syncerr/tree/kirsch33-patch-1" title="Code">💻</a> </td> 
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/kirsch33"><img src="https://avatars1.githubusercontent.com/u/37373320?v=4?s=100" width="100px;"/><br /><sub><b>kirsch33</b></sub></a><br /><a href="https://github.com/gssariev/overr-syncerr/tree/kirsch33-patch-1" title="Code">💻</a> </td> 
     </tr>
     </tbody>
+<tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/nwithan8"><img src="https://avatars.githubusercontent.com/u/17054780?v=4?s=100" width="100px;"/><br /><sub><b>nwithan8</b></sub></a><br /><a href="https://github.com/nwithan8/unraid_templates" title="Unraid Template">💻</a> </td> 
+    </tr>
+    </tbody>
+  
 </table>
 
 
