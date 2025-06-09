@@ -5,7 +5,7 @@ trap {
 }
 
 # Import Functions
-Get-ChildItem -Path './functions/*.ps1' | ForEach-Object { . $_.FullName }
+Get-ChildItem -Path './functions' -Recurse -Filter '*.ps1' | ForEach-Object { . $_.FullName }
 
 # Parse and set up environment variables
 $requestIntervalCheck = $env:CHECK_REQUEST_INTERVAL
@@ -35,6 +35,7 @@ $plexClientId = $env:SERVER_CLIENTID
 $kometaConfig = $env:KOMETA_CONFIG_PATH
 $plexToken = $env:PLEX_TOKEN
 $plexHost = $env:PLEX_HOST
+$cleanVersion = $env:CLEAN_VERSION -eq "true"
 $animeLibraryNames = $env:ANIME_LIBRARY_NAME -split ","
 $moviesLibraryNames = $env:MOVIES_LIBRARY_NAME -split ","
 $seriesLibraryNames = $env:SERIES_LIBRARY_NAME -split ","
