@@ -20,7 +20,7 @@ function Upload-Poster {
         return
     }
 
-    # 🔍 Check for 'overlay' label
+    #Check for 'overlay' label
     $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
     Write-Host "[INF] Checking for existing 'overlay' label..."
     Write-Host "[DBG] Metadata URL: $metadataUrl"
@@ -32,7 +32,7 @@ function Upload-Poster {
         return
     }
 
-    # ✅ Parse labels correctly using `tag` attribute
+    #Parse labels correctly using `tag` attribute
     $labels = @()
     $labelElements = $metadata.MediaContainer.Video.Label
     if (-not $labelElements) {
