@@ -67,7 +67,11 @@ services:
       PORT: 8089 #Webhook port
       LANGUAGE_MAP: "{\"da\":\"Danish\",\"en\":\"English\",\"bg\":\"Bulgarian\",\"dansk\":\"Danish\",\"english\":\"English\",\"danske\":\"Danish\",\"eng\":\"English\"}" #Replace with your own keywords
       SYNC_KEYWORDS: "[\"sync\", \"out of sync\", \"messed up\", \"synchronization\"]" #Replace with your own keywords
-      ADD_LABEL_KEYWORDS: "[\"add to library\", \"jeg vil se\", \"tilføj til bibliotek\", \"tilføj\"]" #Replace with your own keywords 
+      ADD_LABEL_KEYWORDS: "[\"add to library\", \"jeg vil se\", \"tilføj til bibliotek\", \"tilføj\"]" #Replace with your own keywords
+
+      #MEDIUX CONFIG
+      MEDIUX_PREFERRED_USERNAMES: "willtong93,plexstreaming" #Replace with preferred usernames
+      MEDIUX_TOKEN: "YOUR_MEDIUX_TOKEN"
 
     volumes:
       - M:\Movies\1080p:/mnt/movies
