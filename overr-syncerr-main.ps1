@@ -5,7 +5,10 @@ trap {
 }
 
 # Import Functions
-Get-ChildItem -Path './functions' -Recurse -Filter '*.ps1' | ForEach-Object { . $_.FullName }
+Get-ChildItem -Path './functions' -Recurse -Filter '*.ps1' |
+    Where-Object { $_.Name -ne 'Invoke-MissingPosterRetryScan.ps1' } |
+    ForEach-Object { . $_.FullName }
+
 
 # Parse and set up environment variables
 $requestIntervalCheck = $env:CHECK_REQUEST_INTERVAL
@@ -36,6 +39,7 @@ $kometaConfig = $env:KOMETA_CONFIG_PATH
 $plexToken = $env:PLEX_TOKEN
 $plexHost = $env:PLEX_HOST
 $cleanVersion = $env:CLEAN_VERSION -eq "true"
+$enableMediux = $env:USE_MEDIUX -eq "true"
 $animeLibraryNames = $env:ANIME_LIBRARY_NAME -split ","
 $moviesLibraryNames = $env:MOVIES_LIBRARY_NAME -split ","
 $seriesLibraryNames = $env:SERIES_LIBRARY_NAME -split ","
@@ -46,6 +50,7 @@ $openAiApiKey = $env:OPEN_AI_API_KEY
 $useGPT = $env:ENABLE_GPT -eq "true"
 $enableKometa = $env:ENABLE_KOMETA -eq "true"
 $enableAudioPref = $env:ENABLE_AUDIO_PREF -eq "true"
+$enableSubtitlePref = $env:ENABLE_SUB_PREF -eq "true"
 $enableSonarrEpisodeHandler = $env:SONARR_EP_TRACKING -eq "true"
 $modelGPT = $env:MODEL_GPT
 $maxTokens = [int]$env:MAX_TOKENS
@@ -73,9 +78,6 @@ if ($enablePlex -and $enableAudioPref) {
     Log-Message -Type "INF" -Message "Fetching Plex user tokens..."
     Get-PlexUserTokens -plexToken $plexToken -plexClientId $plexClientId
 
-    Log-Message -Type "INF" -Message "Generating user subtitle preferences..."
-    Generate-UserSubtitlePreferences
-
     Log-Message -Type "INF" -Message "Generating user audio preferences..."
     Generate-UserAudioPreferences
 } elseif (-not $enablePlex) {
@@ -83,6 +85,19 @@ if ($enablePlex -and $enableAudioPref) {
 } else {
     Log-Message -Type "WRN" -Message "Fetching Plex user tokens and generating preferences is DISABLED."
 }
+
+if ($enablePlex -and $enableSubtitlePref) {
+    Log-Message -Type "INF" -Message "Fetching Plex user tokens..."
+    Get-PlexUserTokens -plexToken $plexToken -plexClientId $plexClientId
+
+    Log-Message -Type "INF" -Message "Generating user subtitle preferences..."
+    Generate-UserSubtitlePreferences
+} elseif (-not $enablePlex) {
+    Log-Message -Type "WRN" -Message "Plex is not enabled. Skipping user subtitle/audio preferences."
+} else {
+    Log-Message -Type "WRN" -Message "Generating subtitle preferences is DISABLED."
+}
+
 
 # Parse JSON inputs
 try {
@@ -147,6 +162,16 @@ Log-Message -Type "INF" -Message "GPT is $($useGPT ? "used" : "not used") for su
 Log-Message -Type ($enableKometa ? "INF" : "WRN") -Message "Kometa is $($enableKometa ? "ENABLED" : "DISABLED")."
 Log-Message -Type ($enableAudioPref ? "INF" : "WRN") -Message "Audio preference is $($enableAudioPref ? "ENABLED" : "DISABLED")."
 
+# Read the cron schedule from environment (with a sensible default)
+$mediuxCronSchedule = $env:MEDIUX_CRON_SCHEDULE
+if ([string]::IsNullOrWhiteSpace($mediuxCronSchedule)) {
+    $mediuxCronSchedule = "* * * * *" # Or your default
+}
+
+$friendly = Get-FriendlyCronTime $mediuxCronSchedule
+Log-Message -Type "INF" -Message "Cron is configured to run missing poster retry at: '$friendly'"
+
+
 function Parse-IncomingPayload {
     param (
         [System.Net.HttpListenerRequest]$Request
@@ -168,6 +193,8 @@ function Parse-IncomingPayload {
 
     return $rawBody
 }
+
+
 
 # HTTP listener block
 try {
