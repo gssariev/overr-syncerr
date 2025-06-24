@@ -71,6 +71,7 @@ services:
       KOMETA_CONFIG_PATH: CONFIG_PATH_TO_KOMETA
       ENABLE_MEDIA_AVAILABLE_HANDLING: "true" #Enable if you want to use auto-label, kometa overlays or audio preference
       ENABLE_AUDIO_PREF: "true" #Enable if you want to use user specific audio preference
+      ENABLE_SUB_PREF: "true" #Enable if you want to use user specific subtitle preference
       MONITOR_REQUESTS: "false" #Enable if you want to add label or set audio to media that's partially available 
       CHECK_REQUEST_INTERVAL: 10 #Set the desired interval for monitor request to execute (in seconds)
       PORT: 8089 #Webhook port
