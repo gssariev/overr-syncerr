@@ -37,7 +37,16 @@ services:
       MOVIES_LIBRARY_NAME: "YOUR_MOVIE_LIBRARY_NAME"
       SERIES_LIBRARY_NAME: "YOUR_TV_LIBRARY_NAME"
       SERVER_CLIENTID: "YOUR_PLEX_SERVER_CLIENT_ID"
-      
+
+      #MEDIUX CONFIG
+      USE_MEDIUX: "true"
+      MEDIUX_PREFERRED_USERNAMES: "willtong93,plexstreaming,hikari"
+      MEDIUX_FILTERS: "poster,season,titlecard"
+      MEDIUX_TOKEN: "MEDIUX_ACCESS_TOKEN"
+      MEDIUX_CRON_SCHEDULE: "0 */8 * * *"
+      CLEAN_VERSION: "false"
+      MISSING_POSTER_MAX_AGE_DAYS: 30
+
       #SONARR WEBHOOK CONFIG
       SONARR_EP_TRACKING: "false" #Enable to use Sonarr webhook; disables TV logic from being executed via Media Available
       SONARR_TRACK_DELAY_SECONDS: 12 #Delay (in seconds) before triggering audio and subtitle track preferences to ensure that Plex metadata is refreshed, defaults to 10 if empty
