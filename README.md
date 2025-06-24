@@ -39,12 +39,26 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 - **Auto-labelling**: Option to label available requested media with the username of the requester in Plex (inspired by [Plex Requester Collection](https://github.com/manybothans/plex-requester-collections))
 - **Translate Subs Using GPT**: Option to use OpenAI GPT instead of Google Translate for subtitle translation **OpenAI API Key Required**
 
+## MEDIUX Specific Features
+
+### Filters
+- **Preferred Creator**: specify the creator or list of creators that sets and/or collections should be filtered by
+- **Artwork Type**: specifically if you want to fetch only posters, season posters or title cards, a mix of either or all
+- **Clean Version**: specify if you want to prioritse "Clean Version"-type sets over regular sets (if availalbe)
+
+### Artwork
+- **Movies**: automatically fetch and apply movie artwork when marked as available in Overseerr/Jellyseerr
+- **TV**: automatically fetch and apply shows, season and title card artwork when marked as available in Overseerr/Jellyseerr
+- **Track Missing Artwork**: store missing artwork information for media in your Plex library and periodically check for availability and update it once/if artwork becomes available. Configure the schedule (CRON) and number of days check should be performed. Media that is still missing artwork after the specified days will no longer be processed.
+- **Kometa Support**: automatically remove the 'Overlay' Kometa label from media when artwork is applied, so that Kometa can re-apply overlays for that media
+
+### Additional Mediux Config
+- **Plex Webhook**: it's recommended to configue Overr-Syncerr as a payload receiver for Plex webhooks for tracking and applying episode title cards and season posters for incomplete/airing shows
+
 ## Known issues (WIP)
 
 - If you've encountered and issue or have a suggestions, you're welcome to post about it :)
 
-## To-Do
-- Integrate Mediux for automatic poster and title card application based on favourite creators (**NO** **ETA**)
 ## Contributors
 
 Big thank you to the people helping furher develop this project!
