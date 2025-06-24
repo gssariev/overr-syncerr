@@ -93,32 +93,51 @@ function Handle-MediaAvailable {
     Log-Message -Type "SUC" -Message "Extracted Title: $title"
     Log-Message -Type "SUC" -Message "Extracted Year: $year"
 
-    # Search for the media item in Plex using the title and year across multiple section IDs
-    $mediaItem = $null
-    foreach ($sectionId in $sectionIds) {
-        $searchUrl = "$plexHost/library/sections/$sectionId/all?type=$mediaTypeForSearch&title=" + [System.Uri]::EscapeDataString($title) + "&year=$year&X-Plex-Token=$plexToken"
-        
-        try {
-            $mediaItems = Invoke-RestMethod -Uri $searchUrl -Method Get -ContentType "application/xml"
+$mediaItem = $null
 
-            if ($mediaType -eq "movie") {
+foreach ($sectionId in $sectionIds) {
+    try {
+        $searchUrl = "$plexHost/library/sections/$sectionId/all?type=$mediaTypeForSearch"+"&X-Plex-Token=$plexToken"
+        $mediaItems = Invoke-RestMethod -Uri $searchUrl -Method Get -ContentType "application/xml"
+
+        # 1. Try to match by TMDB ID
+        if ($tmdbId) {
+            if ($mediaType -eq "movie" -and $mediaItems.MediaContainer.Video) {
+                $mediaItem = $mediaItems.MediaContainer.Video | Where-Object { $_.Guid -match "tmdb://$tmdbId" }
+            } elseif ($mediaType -eq "tv" -and $mediaItems.MediaContainer.Directory) {
+                $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.Guid -match "tmdb://$tmdbId" }
+            }
+        }
+
+        # 2. If not found, try by TVDB ID
+        if (-not $mediaItem -and $tvdbId) {
+            if ($mediaType -eq "movie" -and $mediaItems.MediaContainer.Video) {
+                $mediaItem = $mediaItems.MediaContainer.Video | Where-Object { $_.Guid -match "tvdb://$tvdbId" }
+            } elseif ($mediaType -eq "tv" -and $mediaItems.MediaContainer.Directory) {
+                $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.Guid -match "tvdb://$tvdbId" }
+            }
+        }
+
+        # 3. If still not found, try by Title & Year
+        if (-not $mediaItem) {
+            if ($mediaType -eq "movie" -and $mediaItems.MediaContainer.Video) {
                 $mediaItem = $mediaItems.MediaContainer.Video | Where-Object { $_.title -eq $title -and $_.year -eq $year }
-            } elseif ($mediaType -eq "tv") {
+            } elseif ($mediaType -eq "tv" -and $mediaItems.MediaContainer.Directory) {
                 $mediaItem = $mediaItems.MediaContainer.Directory | Where-Object { $_.title -eq $title -and $_.year -eq $year }
             }
-
-            if ($mediaItem) {
-                break  # Stop searching once we find the media
-            }
-        } catch {
-            Log-Message -Type "ERR" -Message "Error contacting Plex server for section ID ${sectionId}: $_"
         }
-    }
 
-    if ($null -eq $mediaItem) {
-        Log-Message -Type "ERR" -Message "Media item not found in any section."
-        return
+        if ($mediaItem) { break }  # Stop searching once we find the media
+
+    } catch {
+        Log-Message -Type "ERR" -Message "Error contacting Plex server for section ID ${sectionId}: $_"
     }
+}
+
+if ($null -eq $mediaItem) {
+    Log-Message -Type "ERR" -Message "Media item not found in any section (TMDB, TVDB, Title/Year)."
+    return
+}
 
     # Ensure extracted rating keys are stored as an array
 $ratingKeys = @()
@@ -137,34 +156,67 @@ Add-TagToMedia -newTag $plexUsername -ratingKeys $ratingKeys
 if ($enableAudioPref) {
     foreach ($ratingKey in $ratingKeys) {
         Set-AudioTrack -ratingKey $ratingKey -plexUsername $plexUsername
+    }
+}
+
+if ($enableSubtitlePref) {
+    foreach ($ratingKey in $ratingKeys) {
         Set-SubtitleTrack -ratingKey $ratingKey -plexUsername $plexUsername
     }
 }
 
+if ($enableMediux) {
+# Apply posters from Mediux
 if ($mediaType -eq "movie") {
-    $setInfo = Get-MediuxSetId `
-        -tmdbId $tmdbId `
-        -preferredUsernames ($env:MEDIUX_PREFERRED_USERNAMES -split ',') `
-        -title $title `
-        -year $year `
-        -cleanVersion $cleanVersion
+    $setInfo = Get-MediuxMovieSetId `
+    -tmdbId $tmdbId `
+    -preferredUsernames ($env:MEDIUX_PREFERRED_USERNAMES -split ',') `
+    -title $title `
+    -year $year `
+    -cleanVersion $cleanVersion
+
 
     if ($setInfo) {
-        $posterUrl = $setInfo.assetUrl
-        if ($posterUrl) {
-            foreach ($ratingKey in $ratingKeys) {
-                Upload-Poster `
-                    -ratingKey $ratingKey `
-                    -posterUrl $posterUrl `
-                    -plexToken $plexToken `
-                    -plexHost $plexHost
-            }
-        } else {
-            Log-Message -Type "WRN" -Message "No Mediux artwork URL found for TMDB ID $tmdbId"
+    $posterUrl = $setInfo.assetUrl
+    if ($posterUrl) {
+        foreach ($ratingKey in $ratingKeys) {
+            Upload-Poster `
+                -ratingKey $ratingKey `
+                -posterUrl $posterUrl `
+                -plexToken $plexToken `
+                -plexHost $plexHost
         }
     } else {
-        Log-Message -Type "WRN" -Message "No Mediux set found for TMDB ID $tmdbId"
+        Log-Message -Type "WRN" -Message "No Mediux artwork URL found for TMDB ID $tmdbId"
+        foreach ($ratingKey in $ratingKeys) {
+    Add-MissingPosterEntry `
+        -showTitle $title `
+        -ratingKey $ratingKey `
+        -season $null `
+        -episode $null `
+        -tmdbId $tmdbId `
+        -setId ($setInfo ? $setInfo.setId : $null) `
+        -missingItems @("poster") `
+        -year $year
+}
+
     }
+} else {
+    Log-Message -Type "WRN" -Message "No Mediux set found for TMDB ID $tmdbId"
+    foreach ($ratingKey in $ratingKeys) {
+    Add-MissingPosterEntry `
+        -showTitle $title `
+        -ratingKey $ratingKey `
+        -season $null `
+        -episode $null `
+        -tmdbId $tmdbId `
+        -setId $null `
+        -missingItems @("poster") `
+        -year $year
+}
+
+}
+
 }
 
 elseif ($mediaType -eq "tv") {
@@ -175,8 +227,8 @@ elseif ($mediaType -eq "tv") {
         -year $year `
         -cleanVersion $cleanVersion
 
-    if ($setInfo) {
-        foreach ($ratingKey in $ratingKeys) {
+    foreach ($ratingKey in $ratingKeys) {
+        if ($setInfo) {
             if ($setInfo.assetUrl) {
                 Upload-Poster `
                     -ratingKey $ratingKey `
@@ -184,7 +236,6 @@ elseif ($mediaType -eq "tv") {
                     -plexToken $plexToken `
                     -plexHost $plexHost
             }
-
             foreach ($seasonPoster in $setInfo.seasonPosters) {
                 Upload-SeasonPoster `
                     -ratingKey $ratingKey `
@@ -193,7 +244,6 @@ elseif ($mediaType -eq "tv") {
                     -plexToken $plexToken `
                     -plexHost $plexHost
             }
-
             foreach ($titleCard in $setInfo.titleCards) {
                 Upload-TitleCard `
                     -showRatingKey $ratingKey `
@@ -203,11 +253,53 @@ elseif ($mediaType -eq "tv") {
                     -plexToken $plexToken `
                     -plexHost $plexHost
             }
+        } else {
+            Log-Message -Type "WRN" -Message "No Mediux show sets found for TMDB ID $tmdbId"
         }
-    } else {
-        Log-Message -Type "WRN" -Message "No Mediux show sets found for TMDB ID $tmdbId"
+
+        # --- NEW: Compare with Plex, log missing titlecards/posters ---
+        $episodesUrl = "$plexHost/library/metadata/$ratingKey/allLeaves?X-Plex-Token=$plexToken"
+        $episodesMetadata = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
+        $plexEpisodes = @($episodesMetadata.MediaContainer.Video)
+
+        $allSeasons = $plexEpisodes | Select-Object -ExpandProperty parentIndex -Unique
+
+        foreach ($seasonNum in $allSeasons) {
+            # Check if a season poster exists for this season in Mediux set
+            $hasPoster = $setInfo -and $setInfo.seasonPosters -and ($setInfo.seasonPosters | Where-Object { $_.season -eq $seasonNum })
+            if (-not $hasPoster) {
+                Add-MissingPosterEntry `
+                    -showTitle $title `
+                    -ratingKey $ratingKey `
+                    -season $seasonNum `
+                    -episode $null `
+                    -tmdbId $tmdbId `
+                    -setId ($setInfo ? $setInfo.setId : $null) `
+                    -missingItems @("season")
+            }
+        }
+
+        
+
+        foreach ($ep in $plexEpisodes) {
+            $seasonNum = $ep.parentIndex
+            $epNum = $ep.index
+            # Check if a title card exists for this episode in Mediux set
+            $hasTitleCard = $setInfo -and $setInfo.titleCards -and ($setInfo.titleCards | Where-Object { $_.season -eq $seasonNum -and $_.episode -eq $epNum })
+            if (-not $hasTitleCard) {
+                Add-MissingPosterEntry `
+                    -showTitle $title `
+                    -ratingKey $ratingKey `
+                    -season $seasonNum `
+                    -episode $epNum `
+                    -tmdbId $tmdbId `
+                    -setId ($setInfo ? $setInfo.setId : $null) `
+                    -missingItems @("titlecard")
+            }
+        }
+
     }
 }
-
+}
 
 }

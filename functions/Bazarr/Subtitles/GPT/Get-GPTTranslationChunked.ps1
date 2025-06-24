@@ -6,56 +6,48 @@ function Get-GPTTranslationChunked {
     )
 
     $openAiUrl = "https://api.openai.com/v1/chat/completions"
-    $maxBytesPerRequest = [int]$env:MAX_REQUEST_BYTES
+    $maxTokens = [int]$env:MAX_TOKENS
     $chunkOverlap = [int]$env:CHUNK_OVERLAP
+    $chunkBlockTarget = 20   # Number of blocks per chunk. Tune as needed.
     $delayBetweenRequests = [int]$env:REQUEST_DELAY
+    $modelGPT = $env:MODEL_GPT
+    $openAiApiKey = $env:OPEN_AI_API_KEY
 
-    $lines = $text -split "(?<=\n)"
+    # Normalize Windows/Unix line endings and split into blocks (SRT blocks are separated by blank lines)
+    $text = $text -replace "`r`n", "`n" -replace "`r", "`n"
+    $blocks = $text -split "(\n){2,}" | Where-Object { $_.Trim() -ne "" }
     $chunks = @()
-    $currentChunk = @()
-    $currentByteCount = 0
 
-    foreach ($line in $lines) {
-        $lineByteCount = [System.Text.Encoding]::UTF8.GetByteCount($line)
-        $currentByteCount += $lineByteCount
-        $currentChunk += $line
-
-        if ($currentByteCount -ge $maxBytesPerRequest) {
-            $chunks += $currentChunk -join ""
-            $currentChunk = @()
-            $currentByteCount = 0
-        }
+    # Chunking with overlap
+    $chunkStart = 0
+    $blocksCount = $blocks.Count
+    while ($chunkStart -lt $blocksCount) {
+        $chunkEnd = [Math]::Min($chunkStart + $chunkBlockTarget - 1, $blocksCount - 1)
+        $chunkBlocks = $blocks[$chunkStart..$chunkEnd]
+        $chunks += ,@($chunkBlocks)
+        $chunkStart += ($chunkBlockTarget - $chunkOverlap)
     }
 
-    if ($currentChunk.Count -gt 0) {
-        $chunks += $currentChunk -join ""
-    }
-
-    $translatedText = ""
-    $chunksRemaining = $chunks.Count
-    $estimatedTotalTime = $chunksRemaining * $delayBetweenRequests
-    Write-Host "Subtitle file is being translated by GPT..."
-    Write-Host "Estimated time: approximately $estimatedTotalTime seconds for $chunksRemaining chunks.`n"
+    $translatedChunks = @()
+    Write-Host "Total chunks to be translated: $($chunks.Count). Estimated time: $($chunks.Count * $delayBetweenRequests) seconds.`n"
 
     for ($i = 0; $i -lt $chunks.Count; $i++) {
-        $chunk = $chunks[$i]
-        if (-not [string]::IsNullOrWhiteSpace($chunk)) {
-            $chunkByteSize = [System.Text.Encoding]::UTF8.GetByteCount($chunk)
-            $remainingChunks = $chunks.Count - $i - 1
-            $remainingTime = $remainingChunks * $delayBetweenRequests
-            Write-Host "Translating chunk $($i + 1) of $($chunks.Count) ($chunkByteSize bytes)... Estimated time remaining: $remainingTime seconds"
+        $chunkBlocks = $chunks[$i]
+        $chunk = $chunkBlocks -join "`n`n"
 
-            $promptText = [string]::Format(
-                "Translate from {0} to {1}. Keep all timestamps and sentence structures exactly the same. Do not add any extra comments, metadata, or formatting. Only translate the spoken lines into {1}, and preserve the subtitle formatting:",
-                $sourceLang, $targetLang
-            ) + "`n" + $chunk
+        if (-not [string]::IsNullOrWhiteSpace($chunk)) {
+            $promptText = @"
+Translate these subtitles from $sourceLang to $targetLang. For each subtitle block, keep the block number and timestamp exactly as in the input. ONLY translate the dialogue. Do not merge or split blocks. Do not add, remove, or reorder any block. Preserve subtitle formatting exactly.
+
+$chunk
+"@
 
             $requestBody = @{
                 "model"    = $modelGPT
                 "messages" = @(
                     @{
                         "role"    = "system"
-                        "content" = "You are a helpful assistant that translates subtitles while preserving the subtitle format."
+                        "content" = "You are a subtitle translator. Translate ONLY the dialogue in each subtitle block, keeping all numbers, timestamps, and formatting unchanged. Never merge, split, add, remove, or reorder blocks."
                     },
                     @{
                         "role"    = "user"
@@ -74,7 +66,8 @@ function Get-GPTTranslationChunked {
                     "Content-Type"  = "application/json"
                 } -Body $utf8Body
 
-                $translatedText += $response.choices[0].message.content.Trim() + "`n"
+                $translatedChunk = $response.choices[0].message.content.Trim()
+                $translatedChunks += $translatedChunk  # <<-- STORE AS STRING
                 Start-Sleep -Seconds $delayBetweenRequests
             }
             catch {
@@ -84,8 +77,25 @@ function Get-GPTTranslationChunked {
         }
     }
 
-    $translatedText = $translatedText -replace '```plaintext', '' -replace '```', '' -replace "\r?\n{2,}", "`n"
-    $translatedText = $translatedText -replace "(\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3})\r?\n\1", "$1"
+    # When combining, split each translated chunk into blocks, skip overlap at the block level
+    $finalBlocks = @()
+    for ($i = 0; $i -lt $translatedChunks.Count; $i++) {
+        # split on blank lines, keep only non-empty blocks
+        $chunkBlocks = $translatedChunks[$i] -split "(\n){2,}" | Where-Object { $_.Trim() -ne "" }
+        if ($i -eq 0) {
+            $finalBlocks += $chunkBlocks
+        } else {
+            if ($chunkBlocks.Count -gt $chunkOverlap) {
+                $finalBlocks += $chunkBlocks[$chunkOverlap..($chunkBlocks.Count - 1)]
+            }
+        }
+    }
+
+    # Join blocks with two newlines (SRT format)
+    $translatedText = $finalBlocks -join "`n`n"
+
+    # Optional: Cleanup
+    $translatedText = $translatedText -replace '```plaintext', '' -replace '```', ''
 
     return $translatedText
 }

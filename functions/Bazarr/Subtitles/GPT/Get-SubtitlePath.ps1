@@ -11,10 +11,6 @@ function Get-SubtitlePath {
     # Normalize subtitle path
     $subtitlePath = $subtitlePath -replace "\\", "/"
 
-    # Log initial paths
-    Log-Message -Type "INF" -Message "Original Subtitle Path from Bazarr: '$subtitlePath'"
-    Log-Message -Type "DBG" -Message "Configured Movie Path Mapping: '$moviePathMapping'"
-    Log-Message -Type "DBG" -Message "Configured TV Path Mapping: '$tvPathMapping'"
 
     # Path matching logic (simplified)
     if ($mediaType -eq 'movie' -and $subtitlePath.StartsWith($moviePathMapping)) {

@@ -5,7 +5,8 @@ function Get-MediuxShowSets {
         [string]$title,
         [string]$year,
         [bool]$cleanVersion,
-        [string]$accessToken = $env:MEDIUX_TOKEN
+        [string]$accessToken = $env:MEDIUX_TOKEN,
+        [string[]]$filters = ($env:MEDIUX_FILTERS -split ',' | ForEach-Object { $_.Trim().ToLower() })
     )
 
     $endpoint = "https://staged.mediux.io/graphql"
@@ -76,13 +77,13 @@ function Get-MediuxShowSets {
     try {
         $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $body
     } catch {
-        Write-Warning "[WRN] Failed to fetch show data from Mediux GraphQL: $_"
+        Log-Message -Type "WRN" -Message "Failed to fetch show data from Mediux GraphQL: $_"
         return $null
     }
 
     $show = $response.data.shows_by_id
     if (-not $show) {
-        Write-Warning "[WRN] No show found for TMDB ID $tmdbId"
+        Log-Message -Type "WRN" -Message "No show found for TMDB ID $tmdbId"
         return $null
     }
 
@@ -145,7 +146,7 @@ function Get-MediuxShowSets {
 
     foreach ($preferredUsername in $preferredUsernames) {
         $userSets = $sets | Where-Object { $_.user_created.username -eq $preferredUsername }
-        Write-Host "[DBG] Found $($userSets.Count) show sets by '$preferredUsername'"
+        Log-Message -Type "INF" -Message "Found $($userSets.Count) show sets by '$preferredUsername'"
 
         $selected = $null
         if ($cleanVersion) {
@@ -165,16 +166,24 @@ function Get-MediuxShowSets {
         }
 
         if ($selected) {
-            return @{
-                setId         = $selected.id
-                assetId       = $selected.poster_id
-                assetUrl      = "https://api.mediux.pro/assets/$($selected.poster_id)"
-                seasonPosters = $allSeasonPosters | Where-Object { $_.set_id -eq $selected.id }
-                titleCards    = $allTitleCards    | Where-Object { $_.set_id -eq $selected.id }
+            $result = @{
+                setId    = $selected.id
+                assetId  = $selected.poster_id
+                assetUrl = "https://api.mediux.pro/assets/$($selected.poster_id)"
             }
+
+            if ("season" -in $filters) {
+                $result.seasonPosters = $allSeasonPosters | Where-Object { $_.set_id -eq $selected.id }
+            }
+
+            if ("titlecard" -in $filters) {
+                $result.titleCards = $allTitleCards | Where-Object { $_.set_id -eq $selected.id }
+            }
+
+            return $result
         }
     }
 
-    Write-Warning "[WRN] No matching show set found for TMDB ID $tmdbId"
+    Log-Message -Type "WRN" -Message "No matching show set found for TMDB ID $tmdbId"
     return $null
 }

@@ -25,7 +25,7 @@ function Remove-TagFromMedia {
             continue
         }
 
-        # ✅ Parse labels from XML properly
+        # Parse labels from XML properly
         $labelElements = $metadata.MediaContainer.Video.Label
         if (-not $labelElements) {
             $labelElements = $metadata.MediaContainer.Directory.Label

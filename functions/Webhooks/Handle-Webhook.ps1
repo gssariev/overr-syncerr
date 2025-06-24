@@ -2,81 +2,124 @@ function Handle-Webhook {
     param ([string]$jsonPayload)
 
     $payload = $jsonPayload | ConvertFrom-Json -AsHashtable
-
-    # Retrieve ADD_LABEL_KEYWORDS env var
     $addLabelKeywords = $env:ADD_LABEL_KEYWORDS | ConvertFrom-Json
 
-    # Plex: Handle new episode
+    $event = $payload["event"]
+    $meta = $null
+    if ($payload.ContainsKey("Metadata")) {
+        $meta = $payload["Metadata"]
+    }
+
+    # Plex: Handle new library item from TV section
     if (
         $payload.ContainsKey('event') -and
-        $payload["event"] -eq "library.new" -and
-        $payload["Metadata"]["librarySectionType"] -eq "show" -and
-        $payload["Metadata"]["type"] -eq "episode"
+        $event -eq "library.new" -and
+        $meta -ne $null -and
+        $meta["librarySectionType"] -eq "show"
     ) {
-        $ratingKey = $payload["Metadata"]["ratingKey"]
-        $title = $payload["Metadata"]["grandparentTitle"]
-        $season = $payload["Metadata"]["parentIndex"]
-        $episode = $payload["Metadata"]["index"]
-        $episodeTitle = $payload["Metadata"]["title"]
+        if ($meta["type"] -eq "episode") {
+            $episodeRatingKey = $meta["ratingKey"]
+            $showRatingKey = $meta["grandparentRatingKey"]
+            $title = $meta["grandparentTitle"]
+            $season = $meta["parentIndex"]
+            $episode = $meta["index"]
+            $episodeTitle = $meta["title"]
 
-        Log-Message -Type "INF" -Message "📺 New episode added: $title - S$("{0:D2}" -f $season)E$("{0:D2}" -f $episode) \"$episodeTitle\""
+            Log-Message -Type "INF" -Message "📺 New episode added: $title - S$("{0:D2}" -f $season)E$("{0:D2}" -f $episode) \"$episodeTitle\""
 
-        if ($enableAudioPref) {
-            Set-AudioTrack -RatingKey $ratingKey
-            Set-SubtitleTrack -RatingKey $ratingKey
-        }
-
-        return
-    }
-
-    # Plex: Handle new show (fetch recently added children episodes)
-if (
-    $payload.ContainsKey('event') -and
-    $payload["event"] -eq "library.new" -and
-    $payload["Metadata"]["librarySectionType"] -eq "show" -and
-    $payload["Metadata"]["type"] -eq "show"
-) {
-    $showTitle = $payload["Metadata"]["title"]
-    $showRatingKey = $payload["Metadata"]["ratingKey"]
-    Log-Message -Type "INF" -Message "📚 New show added: $showTitle (RatingKey: $showRatingKey)"
-
-    if ($enableAudioPref) {
-        try {
-            $episodesUrl = "$plexHost/library/metadata/$showRatingKey/allLeaves?X-Plex-Token=$plexToken"
-            $episodesMetadata = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
-
-            $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-            $thresholdSeconds = 300  # Only consider episodes added in the last 5 minutes
-
-            $recentEpisodes = @($episodesMetadata.MediaContainer.Video | Where-Object {
-                ($now - $_.addedAt) -lt $thresholdSeconds
-            })
-
-            if ($recentEpisodes.Count -eq 0) {
-                Log-Message -Type "INF" -Message "No newly added episodes found in show. Skipping."
-                return
+            if ($enableAudioPref) {
+                Set-AudioTrack -RatingKey $episodeRatingKey
+                Set-SubtitleTrack -RatingKey $episodeRatingKey
             }
 
-            foreach ($episode in $recentEpisodes) {
-                $episodeTitle = $episode.title
-                $season = $episode.parentIndex
-                $epNum = $episode.index
-                $epKey = $episode.ratingKey
+            if ($enableMediux -and $episodeRatingKey) {
+                try {
+                    # Fetch TMDB ID from the show
+                    $metadataUrl = "$plexHost/library/metadata/$showRatingKey"+"?X-Plex-Token=$plexToken"
+                    $metaXml = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
+                    $guid = $metaXml.MediaContainer.Directory.guid | Where-Object { $_.id -like "tmdb*" }
 
-                Log-Message -Type "INF" -Message "🎬 Processing: $showTitle S$("{0:D2}" -f $season)E$("{0:D2}" -f $epNum) - $episodeTitle"
+                    if (-not $guid -or -not ($guid.id -match "\d+")) {
+                        Log-Message -Type "WRN" -Message "TMDB ID not found for show: $title"
+                        return
+                    }
 
-                Set-AudioTrack -RatingKey $epKey
-                Set-SubtitleTrack -RatingKey $epKey
+                    $tmdbId = [int]($guid.id -replace "\D", "")
+
+                    Invoke-MediuxPosterSync `
+                        -title $title `
+                        -ratingKey $showRatingKey `
+                        -mediaType "show" `
+                        -season $season `
+                        -episode $episode `
+                        -tmdbId $tmdbId
+                } catch {
+                    Log-Message -Type "ERR" -Message "Failed to fetch TMDB ID for show '$title': $_"
+                }
             }
 
-        } catch {
-            Log-Message -Type "ERR" -Message "Failed to retrieve or process episodes for $showTitle. Error: $_"
+        } elseif ($meta["type"] -eq "show") {
+            $title = $meta["title"]
+            $ratingKey = $meta["ratingKey"]
+
+            Log-Message -Type "INF" -Message "📚 New show added: $title (RatingKey: $ratingKey)"
+
+            if ($enableAudioPref -or $enableMediux) {
+                try {
+                    $episodesUrl = "$plexHost/library/metadata/$ratingKey/allLeaves?X-Plex-Token=$plexToken"
+                    $episodesXml = Invoke-RestMethod -Uri $episodesUrl -Method Get -ContentType "application/xml"
+
+                    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+                    $recentEpisodes = @($episodesXml.MediaContainer.Video | Where-Object {
+                        ($now - $_.addedAt) -lt 300
+                    })
+
+                    if ($recentEpisodes.Count -eq 0) {
+                        Log-Message -Type "INF" -Message "No newly added episodes found. Skipping."
+                        return
+                    }
+
+                    # Retrieve TMDB ID from the show (not episodes)
+                    $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
+                    $metaXml = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
+                    $guid = $metaXml.MediaContainer.Directory.guid | Where-Object { $_.id -like "tmdb*" }
+
+                    if (-not $guid -or -not ($guid.id -match "\d+")) {
+                        Log-Message -Type "WRN" -Message "TMDB ID not found for show: $title"
+                        return
+                    }
+
+                    $tmdbId = [int]($guid.id -replace "\D", "")
+
+                    foreach ($ep in $recentEpisodes) {
+                        $season = $ep.parentIndex
+                        $episode = $ep.index
+                        $epRatingKey = $ep.ratingKey
+                        $epTitle = $ep.title
+
+                        Log-Message -Type "INF" -Message "🎬 Processing: $title S$("{0:D2}" -f $season)E$("{0:D2}" -f $episode) - $epTitle"
+
+                        if ($enableAudioPref) {
+                            Set-AudioTrack -RatingKey $epRatingKey
+                            Set-SubtitleTrack -RatingKey $epRatingKey
+                        }
+
+                        if ($enableMediux) {
+                            Invoke-MediuxPosterSync `
+                                -title $title `
+                                -ratingKey $ratingKey `
+                                -mediaType "show" `
+                                -season $season `
+                                -episode $episode `
+                                -tmdbId $tmdbId
+                        }
+                    }
+                } catch {
+                    Log-Message -Type "ERR" -Message "Failed to fetch or process episodes for show '$title': $_"
+                }
+            }
         }
     }
-
-    return
-}
-
 
     # Overseerr MEDIA_AVAILABLE
     if ($payload["notification_type"] -eq "MEDIA_AVAILABLE") {
@@ -115,6 +158,5 @@ if (
                 Log-Message -Type "INF" -Message "Unhandled Sonarr event type: $($payload["eventType"])"
             }
         }
-
-    } 
+    }
 }

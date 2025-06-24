@@ -9,30 +9,29 @@ function Upload-Poster {
     $encodedUrl = [uri]::EscapeDataString($posterUrl)
     $requestUrl = "$plexHost/library/metadata/$ratingKey/posters?url=$encodedUrl"+"&X-Plex-Token=$plexToken"
 
-    Write-Host "[INF] Sending POST request to Plex to update poster:"
-    Write-Host "[DBG] $requestUrl"
+    Log-Message -Type "INF" -Message "Sending POST request to Plex to update poster:"
+   
 
     try {
         Invoke-RestMethod -Method Post -Uri $requestUrl -Headers @{ "Accept" = "application/json" }
-        Write-Host "[SUC] Poster updated successfully via URL."
+        Log-Message -Type "SUC" -Message "Poster updated successfully via URL."
     } catch {
-        Write-Error "[ERR] Failed to set poster via URL: $_"
+        Log-Message -Type "ERR" -Message "Failed to set poster via URL: $_"
         return
     }
 
-    #Check for 'overlay' label
+    # Check for 'overlay' label
     $metadataUrl = "$plexHost/library/metadata/$ratingKey"+"?X-Plex-Token=$plexToken"
-    Write-Host "[INF] Checking for existing 'overlay' label..."
-    Write-Host "[DBG] Metadata URL: $metadataUrl"
+    Log-Message -Type "INF" -Message "Checking for existing 'Overlay' label..."
 
     try {
         $metadata = Invoke-RestMethod -Uri $metadataUrl -Method Get -ContentType "application/xml"
     } catch {
-        Write-Warning "[WRN] Failed to fetch metadata to verify 'overlay' label: $_"
+        Log-Message -Type "ERR" -Message "Failed to fetch metadata to verify 'overlay' label: $_"
         return
     }
 
-    #Parse labels correctly using `tag` attribute
+    # Parse labels correctly using `tag` attribute
     $labels = @()
     $labelElements = $metadata.MediaContainer.Video.Label
     if (-not $labelElements) {
@@ -48,9 +47,9 @@ function Upload-Poster {
     }
 
     if ($labels -contains "Overlay") {
-        Write-Host "[INF] Found label 'Overlay' — removing it now..."
+        Log-Message -Type "INF" -Message "Found label 'Overlay' — removing it now..."
         Remove-TagFromMedia -removeTag "Overlay" -ratingKeys @($ratingKey)
     } else {
-        Write-Host "[INF] No 'Overlay' label found. Skipping removal."
+        Log-Message -Type "INF" -Message "No 'Overlay' label found. Skipping removal."
     }
 }

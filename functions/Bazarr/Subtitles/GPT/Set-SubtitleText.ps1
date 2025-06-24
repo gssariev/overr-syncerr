@@ -12,10 +12,6 @@ function Set-SubtitleText {
     # Normalize subtitle path
     $subtitlePath = $subtitlePath -replace "\\", "/"
 
-    # Debugging output before path replacement
-    Write-Host "DEBUG: Checking '$subtitlePath' against '$moviePathMapping'"
-    Write-Host "DEBUG: Checking '$subtitlePath' against '$tvPathMapping'"
-
     # Match and replace paths
     if ($subtitlePath.StartsWith($moviePathMapping)) {
         Write-Host "DEBUG: Movie path detected. Replacing '$moviePathMapping' with '/mnt/movies'"

@@ -14,12 +14,12 @@ function Upload-TitleCard {
         $seasonMeta = Invoke-RestMethod -Uri $seasonUrl -Method Get -ContentType "application/xml"
         $seasonDir = $seasonMeta.MediaContainer.Directory | Where-Object { $_.index -eq $seasonNumber }
         if (-not $seasonDir) {
-            Write-Warning "[WRN] Season $seasonNumber not found."
+            Log-Message -Type "WRN" -Message "Season $seasonNumber not found."
             return
         }
         $seasonRatingKey = $seasonDir.ratingKey
     } catch {
-        Write-Warning "[WRN] Failed to fetch season metadata: $_"
+        Log-Message -Type "ERR" -Message "Failed to fetch season metadata: $_"
         return
     }
 
@@ -29,12 +29,12 @@ function Upload-TitleCard {
         $episodeMeta = Invoke-RestMethod -Uri $episodeUrl -Method Get -ContentType "application/xml"
         $episodeDir = $episodeMeta.MediaContainer.Video | Where-Object { $_.index -eq $episodeNumber }
         if (-not $episodeDir) {
-            Write-Warning "[WRN] Episode S$seasonNumber E$episodeNumber not found."
+            Log-Message -Type "WRN" -Message "Episode S$seasonNumber E$episodeNumber not found."
             return
         }
         $episodeRatingKey = $episodeDir.ratingKey
     } catch {
-        Write-Warning "[WRN] Failed to fetch episode metadata: $_"
+        Log-Message -Type "WRN" -Message "Failed to fetch episode metadata: $_"
         return
     }
 
@@ -42,13 +42,12 @@ function Upload-TitleCard {
     $encodedUrl = [uri]::EscapeDataString($posterUrl)
     $requestUrl = "$plexHost/library/metadata/$episodeRatingKey/thumbs?url=$encodedUrl&X-Plex-Token=$plexToken"
 
-    Write-Host "[INF] Uploading title card for S$seasonNumber E$episodeNumber..."
-    Write-Host "[DBG] $requestUrl"
+    Log-Message -Type "INF" -Message "Uploading title card for S$seasonNumber E$episodeNumber..."
 
     try {
         Invoke-RestMethod -Method Post -Uri $requestUrl -Headers @{ "Accept" = "application/json" }
-        Write-Host "[SUC] Title card uploaded for episode S$seasonNumber E$episodeNumber."
+        Log-Message -Type "SUC" -Message "Title card uploaded for episode S$seasonNumber E$episodeNumber."
     } catch {
-        Write-Warning "[WRN] Failed to upload title card: $_"
+        Log-Message -Type "ERR" -Message "Failed to upload title card: $_"
     }
 }
