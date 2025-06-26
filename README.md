@@ -57,7 +57,7 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 
 ### To Be Implemented
 - **Backdrop artwork**
-- **Collection poster artowrk**
+- **Collection poster artwork**
 
 ## Known issues (WIP)
 
