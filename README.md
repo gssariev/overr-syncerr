@@ -55,6 +55,10 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 ### Additional Mediux Config
 - **Plex Webhook**: it's recommended to configue Overr-Syncerr as a payload receiver for Plex webhooks for tracking and applying episode title cards and season posters for incomplete/airing shows
 
+### To Be Implemented
+- **Backdrop artwork**
+- **Collection poster artowrk**
+
 ## Known issues (WIP)
 
 - If you've encountered and issue or have a suggestions, you're welcome to post about it :)
