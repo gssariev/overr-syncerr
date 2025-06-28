@@ -49,6 +49,7 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 ### Artwork
 - **Movies**: automatically fetch and apply movie artwork when marked as available in Overseerr/Jellyseerr
 - **TV**: automatically fetch and apply shows, season and title card artwork when marked as available in Overseerr/Jellyseerr
+- **Collection poster artwork**: apply collection posters to movie collections in Plex
 - **Track Missing Artwork**: store missing artwork information for media in your Plex library and periodically check for availability and update it once/if artwork becomes available. Configure the schedule (CRON) and number of days check should be performed. Media that is still missing artwork after the specified days will no longer be processed.
 - **Kometa Support**: automatically remove the 'Overlay' Kometa label from media when artwork is applied, so that Kometa can re-apply overlays for that media
 
@@ -56,8 +57,10 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 - **Plex Webhook**: it's recommended to configue Overr-Syncerr as a payload receiver for Plex webhooks for tracking and applying episode title cards and season posters for incomplete/airing shows
 
 ### To Be Implemented
-- **Backdrop artwork**
-- **Collection poster artwork**
+- **Backdrop artwork**:
+  - Movies ✅ 
+  - Collections 🛠️
+  - Shows 🛠️
 
 ## Known issues (WIP)
 
