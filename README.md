@@ -60,7 +60,7 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
 - **Backdrop artwork**:
   - Movies ✅ 
   - Collections 🛠️
-  - Shows 🛠️
+  - Shows ✅
 
 ## Known issues (WIP)
 
