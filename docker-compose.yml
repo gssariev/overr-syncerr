@@ -8,23 +8,14 @@ services:
       #BAZARR CONFIG
       BAZARR_API_KEY: "YOUR_BAZARR_API_KEY"
       BAZARR_URL: "http://BAZARR_URL:PORT/api"
-      
-      BAZARR_4K_API_KEY: "YOUR_BAZARR_4K_API_KEY"
-      BAZARR_4K_URL: "http://BAZARR_4K_URL:PORT/api"
 
       #RADARR CONFIG
       RADARR_API_KEY: "YOUR_RADARR_API_KEY"
       RADARR_URL: "http://RADARR_URL:PORT/api/v3"
       
-      RADARR_4K_API_KEY: "YOUR_RADARR_4K_API_KEY"
-      RADARR_4K_URL: "http://RADARR_4K_URL:PORT/api/v3"
-      
       #SONARR CONFIG
       SONARR_API_KEY: "YOUR_SONARR_API_KEY"
       SONARR_URL: "http://SONARR_URL:PORT/api/v3"
-
-      SONARR_4K_API_KEY: "SONARR_4K_API_KEY"
-      SONARR_4K_URL: "http://SONARR_4K_URL:PORT/api/v3"
       
       #OVERSEERR or JELLYSEERR CONFIG
       OVERSEERR_API_KEY: "OVERRSEERR_OR_JELLYSEERR_API_KEY"
@@ -47,14 +38,10 @@ services:
       CLEAN_VERSION: "false"
       MISSING_POSTER_MAX_AGE_DAYS: 30
 
-      #SONARR WEBHOOK CONFIG
-      SONARR_EP_TRACKING: "false" #Enable to use Sonarr webhook; disables TV logic from being executed via Media Available
-      SONARR_TRACK_DELAY_SECONDS: 12 #Delay (in seconds) before triggering audio and subtitle track preferences to ensure that Plex metadata is refreshed, defaults to 10 if empty
-
       #GPT CONFIG
       #Replace the gpt model with the one you wish. 
       #Bytesize, tokens, chuncks and delays can be left as is.
-      ENABLE_GPT: "true"
+      ENABLE_GPT: "false"
       MODEL_GPT: "gpt-4o"
       OPEN_AI_API_KEY: "YOUR_OPEN_AI_KEY"
       MAX_REQUEST_BYTES: 2000 
@@ -66,22 +53,19 @@ services:
       MOVIE_PATH_MAPPING: "M:\\Movies\\1080p" #Bazarr subtitles path for GPT translation
       TV_PATH_MAPPING: "M:\\TV\\1080p" #Bazarr subtitles path for GPT translation
       
-      #ADDITONAL OPTIONS CONFIG
-      ENABLE_KOMETA: "true"
+      #KOMETA
+      ENABLE_KOMETA: "false"
       KOMETA_CONFIG_PATH: CONFIG_PATH_TO_KOMETA
+      
+      #ADDITONAL OPTIONS CONFIG
       ENABLE_MEDIA_AVAILABLE_HANDLING: "true" #Enable if you want to use auto-label, kometa overlays or audio preference
-      ENABLE_AUDIO_PREF: "true" #Enable if you want to use user specific audio preference
-      ENABLE_SUB_PREF: "true" #Enable if you want to use user specific subtitle preference
+      ENABLE_AUDIO_PREF: "false" #Enable if you want to use user specific audio preference
+      ENABLE_SUB_PREF: "false" #Enable if you want to use user specific subtitle preference
       MONITOR_REQUESTS: "false" #Enable if you want to add label or set audio to media that's partially available 
-      CHECK_REQUEST_INTERVAL: 10 #Set the desired interval for monitor request to execute (in seconds)
       PORT: 8089 #Webhook port
       LANGUAGE_MAP: "{\"da\":\"Danish\",\"en\":\"English\",\"bg\":\"Bulgarian\",\"dansk\":\"Danish\",\"english\":\"English\",\"danske\":\"Danish\",\"eng\":\"English\"}" #Replace with your own keywords
       SYNC_KEYWORDS: "[\"sync\", \"out of sync\", \"messed up\", \"synchronization\"]" #Replace with your own keywords
       ADD_LABEL_KEYWORDS: "[\"add to library\", \"jeg vil se\", \"tilføj til bibliotek\", \"tilføj\"]" #Replace with your own keywords
-
-      #MEDIUX CONFIG
-      MEDIUX_PREFERRED_USERNAMES: "willtong93,plexstreaming" #Replace with preferred usernames
-      MEDIUX_TOKEN: "YOUR_MEDIUX_TOKEN"
 
     volumes:
       - M:\Movies\1080p:/mnt/movies
