@@ -61,7 +61,8 @@ Refer to the official Overr-Syncerr docs at - https://wiki.overrsyncerr.info
   - Movies ✅ 
   - Collections 🛠️
   - Shows ✅
-
+- **Full Plex Library Processing** (not requested via Overseerr/Jellyseerr)
+  - 🛠️
 ## Known issues (WIP)
 
 - If you've encountered and issue or have a suggestions, you're welcome to post about it :)
