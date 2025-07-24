@@ -61,6 +61,8 @@ services:
       ENABLE_MEDIA_AVAILABLE_HANDLING: "true" #Enable if you want to use auto-label, kometa overlays or audio preference
       ENABLE_AUDIO_PREF: "false" #Enable if you want to use user specific audio preference
       ENABLE_SUB_PREF: "false" #Enable if you want to use user specific subtitle preference
+      FULL_LIBRARY_AUDIO_SUB_SYNC: "false" #Enable if you want to apply preferred audio and subtitle tracks to your whole Plex library (libraries specified in movies, series and anime variables)
+      SYNC_OVERWRITE: "false" #Force reprocessing of media items (full library audio sub sync)
       MONITOR_REQUESTS: "false" #Enable if you want to add label or set audio to media that's partially available 
       PORT: 8089 #Webhook port
       LANGUAGE_MAP: "{\"da\":\"Danish\",\"en\":\"English\",\"bg\":\"Bulgarian\",\"dansk\":\"Danish\",\"english\":\"English\",\"danske\":\"Danish\",\"eng\":\"English\"}" #Replace with your own keywords
@@ -70,7 +72,7 @@ services:
     volumes:
       - M:\Movies\1080p:/mnt/movies
       - M:\TV\1080p:/mnt/tv
-      - path/to/config:/mnt/usr #Storing user tokens and prefered audio
+      - path/to/config:/config #For storing all json data
       - /var/run/docker.sock:/var/run/docker.sock #To trigger Kometa container
       
     restart: unless-stopped
