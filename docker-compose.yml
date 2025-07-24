@@ -35,6 +35,7 @@ services:
       MEDIUX_FILTERS: "poster,season,titlecard"
       MEDIUX_TOKEN: "MEDIUX_ACCESS_TOKEN"
       MEDIUX_CRON_SCHEDULE: "0 */8 * * *"
+      FULL_LIBRARY_ARTWORK: "false" #Attempt to find and apply preferred artwork to whole Plex library (libraries specified in movies, series and anime variables)
       CLEAN_VERSION: "false"
       MISSING_POSTER_MAX_AGE_DAYS: 30
 
