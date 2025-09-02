@@ -1,6 +1,6 @@
 services:
   overr-syncerr:
-    image: gsariev/overr-syncerr:latest
+    image: gsariev/overr-syncerr:mediux-preview
     container_name: overr-syncerr
     ports:
       - "8089:8089"
@@ -77,3 +77,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock #To trigger Kometa container
       
     restart: unless-stopped
+
