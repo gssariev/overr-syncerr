@@ -1,0 +1,110 @@
+# =========================================================
+# Overr-Syncerr Environment Configuration
+# =========================================================
+
+# -------------------------
+# Plex & Webhook settings
+# -------------------------
+PORT=8089
+PLEX_HOST=http://192.168.0.140:32400
+PLEX_TOKEN=YOUR_PLEX_TOKEN
+SERVER_NAME=YOUR_SERVER_NAME
+
+
+# -------------------------
+# Library Names
+# -------------------------
+MOVIES_LIBRARY_NAME=Movies
+SERIES_LIBRARY_NAME=Series,Kids Shows
+ANIME_LIBRARY_NAME=Anime
+
+
+# -------------------------
+# Feature Toggles
+# -------------------------
+ENABLE_MEDIA_AVAILABLE_HANDLING=true
+ENABLE_AUDIO_PREF=true
+ENABLE_SUB_PREF=true
+ENABLE_KOMETA=false
+ENABLE_GPT=false
+USE_MEDIUX=true
+
+FULL_LIBRARY_ARTWORK=false
+FULL_LIBRARY_AUDIO_SUB_SYNC=false
+
+MONITOR_REQUESTS=false
+
+
+# -------------------------
+# Seerr
+# -------------------------
+OVERSEERR_URL=http://192.168.0.140:5057/api/v1
+OVERSEERR_API_KEY=YOUR_SEER_API_KEY
+
+
+# -------------------------
+# Radarr / Sonarr / Bazarr
+# -------------------------
+RADARR_URL=http://192.168.0.140:7878/api/v3
+RADARR_API_KEY=YOUR_RADARR_API_KEY
+
+SONARR_URL=http://192.168.0.140:8989/api/v3
+SONARR_API_KEY=YOUR_RADARR_API_KEY
+
+BAZARR_URL=http://192.168.0.140:6767/api
+BAZARR_API_KEY=YOUR_BAZARR_API_KEY
+
+
+# -------------------------
+# 4K Instances (optional)
+# -------------------------
+RADARR_4K_URL=http://192.168.0.140:7879/api/v3
+RADARR_4K_API_KEY=YOUR_4K_RADARR_API_KEY
+
+SONARR_4K_URL=http://192.168.0.140:8990/api/v3
+SONARR_4K_API_KEY=YOUR_4K_SONARR_API_KEY
+
+BAZARR_4K_URL=http://192.168.0.140:6768/api
+BAZARR_4K_API_KEY=YOUR_4K_BAZARR_API_KEY
+
+
+# -------------------------
+# Audio / Subtitle Logic
+# -------------------------
+LANGUAGE_MAP={"da":"Danish","en":"English","bg":"Bulgarian","dansk":"Danish","english":"English","danske":"Danish","eng":"English"}
+SYNC_KEYWORDS=["sync","out of sync","messed up","synchronization"]
+ADD_LABEL_KEYWORDS=["add to library","jeg vil se","tilføj til bibliotek","tilføj"]
+SYNC_OVERWRITE=false
+MOVIE_PATH_MAPPING=/movies
+TV_PATH_MAPPING=/tv
+
+
+# -------------------------
+# OpenAI / GPT
+# -------------------------
+OPEN_AI_API_KEY=YOUR_OPENAI_API_KEY
+MODEL_GPT=gpt-4o
+MAX_TOKENS=4000
+MAX_REQUEST_BYTES=2000
+CHUNK_OVERLAP=3
+REQUEST_DELAY=2
+ADD_GPT_HEADER=false
+
+
+# -------------------------
+# Mediux
+# -------------------------
+MEDIUX_PREFERRED_USERNAMES=willtong93,plexstreaming,hikari,parrillized,r3draid3r04,pejamas,kwickflix,whiskeytime
+MEDIUX_FILTERS=poster,season,titlecard,backdrop,collection
+MEDIUX_CRON_SCHEDULE=0 */8 * * *
+CLEAN_VERSION=false
+MEDIUX_TOKEN=MEDIUX_ACCESS_TOKEN
+MEDIUX_ENABLE_FALLBACK_KEYWORD=true
+MEDIUX_FALLBACK_KEYWORDS=IMAX
+MISSING_POSTER_MAX_AGE_DAYS=35
+
+# -------------------------
+# Kometa
+# -------------------------
+KOMETA_CONFIG_PATH=/mnt/user/appdata/kometa/config:/config:rw
+
